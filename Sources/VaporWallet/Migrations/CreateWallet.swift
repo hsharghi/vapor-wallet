@@ -1,7 +1,9 @@
 import Fluent
 
-struct CreateWallet<M:HasWallet>: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+public struct CreateWallet<M:HasWallet>: Migration {
+    public init() { }
+    
+    public func prepare(on database: Database) -> EventLoopFuture<Void> {
         return database.schema(Wallet.schema)
             .id()
             .field("name", .string, .required)
@@ -14,7 +16,7 @@ struct CreateWallet<M:HasWallet>: Migration {
             .create()
     }
     
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: Database) -> EventLoopFuture<Void> {
         return database.schema(Wallet.schema).delete()
     }
 }

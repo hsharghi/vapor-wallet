@@ -9,16 +9,16 @@ import Vapor
 import Fluent
 
 
-final class WalletTransaction: Model {
+public final class WalletTransaction: Model {
     
-    static let schema = "wallet_transactions"
+    public static let schema = "wallet_transactions"
     
     enum TransactionType: String, Content {
         case deposit, withdraw
     }
     
     @ID(key: .id)
-    var id: UUID?
+    public var id: UUID?
     
     @Parent(key: "wallet_id")
     var wallet: Wallet
@@ -41,7 +41,7 @@ final class WalletTransaction: Model {
     @Timestamp(key: "updated_at", on: .update)
     var updatedAt: Date?
 
-    init() {}
+    public init() {}
     
     init(
         id: UUID? = nil,

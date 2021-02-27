@@ -1,7 +1,9 @@
 import Fluent
 
-struct CreateWalletTransaction: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
+public struct CreateWalletTransaction: Migration {
+    public init() { }
+    
+    public func prepare(on database: Database) -> EventLoopFuture<Void> {
         return database.enum("type").case("deposit").case("withdraw").create().flatMap { transactionType in
             return database.schema(WalletTransaction.schema)
                 .id()
@@ -14,7 +16,7 @@ struct CreateWalletTransaction: Migration {
         }
     }
     
-    func revert(on database: Database) -> EventLoopFuture<Void> {
+    public func revert(on database: Database) -> EventLoopFuture<Void> {
         return database.schema(Wallet.schema).delete()
     }
 }

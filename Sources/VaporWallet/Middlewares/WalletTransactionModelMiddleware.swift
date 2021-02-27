@@ -10,9 +10,9 @@ import Fluent
 
 
 
-struct WalletTransactionMiddleware: ModelMiddleware {
+public struct WalletTransactionMiddleware: ModelMiddleware {
     
-    func create(model: WalletTransaction, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
+    public func create(model: WalletTransaction, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
         // The model can be altered here before it is created.
         
         return next.create(model, on: db).flatMap {
