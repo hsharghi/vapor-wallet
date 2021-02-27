@@ -42,11 +42,11 @@ extension HasWallet {
     }
     
     func canWithdraw(on db: Database, from: WalletType, amount: Double) -> EventLoopFuture<Bool> {
-        return self.wallet(on: db, with: from).flatMap { $0.refreshBalance(on: db).map { $0 > amount } }
+        return self.wallet(on: db, type: from).flatMap { $0.refreshBalance(on: db).map { $0 > amount } }
     }
     
     public func deposit(on db: Database, to: WalletType = .default, amount: Double, confirmed: Bool, meta: [String: String]? = nil) throws -> EventLoopFuture<Void> {
-        return self.wallet(on: db, with: to).flatMap { wallet -> EventLoopFuture<Void> in
+        return self.wallet(on: db, type: to).flatMap { wallet -> EventLoopFuture<Void> in
             return db.transaction { database -> EventLoopFuture<Void> in
                 do {
                     return WalletTransaction(walletID: try wallet.requireID(), type: .deposit, amount: amount, confirmed: confirmed, meta: meta)
@@ -63,7 +63,7 @@ extension HasWallet {
         canWithdraw(on: db, from: from, amount: amount)
             .guard({ $0 == true }, else: WalletError.insufficientBalance)
             .flatMap { _ in
-                self.wallet(on: db, with: from).flatMap { wallet -> EventLoopFuture<Void> in
+                self.wallet(on: db, type: from).flatMap { wallet -> EventLoopFuture<Void> in
                     return db.transaction { database -> EventLoopFuture<Void> in
                         do {
                             return WalletTransaction(walletID: try wallet.requireID(), type: .withdraw, amount: amount, meta: meta)
@@ -80,14 +80,14 @@ extension HasWallet {
         Wallet.query(on: db).filter(\.$name == WalletType.default.string).all()
     }
 
-    func wallet(on db: Database, with name: WalletType) -> EventLoopFuture<Wallet> {
+    func wallet(on db: Database, type name: WalletType) -> EventLoopFuture<Wallet> {
         Wallet.query(on: db).filter(\.$name == name.string)
             .first()
             .unwrap(or: WalletError.walletNotFound(name: name.string))
     }
     
     func defaultWallet(on db: Database) -> EventLoopFuture<Wallet> {
-        wallet(on: db, with: .default)
+        wallet(on: db, type: .default)
     }
     
 }
