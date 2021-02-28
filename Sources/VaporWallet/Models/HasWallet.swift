@@ -12,8 +12,7 @@ import Fluent
 public protocol HasWallet: FluentKit.Model {
     associatedtype Owner: FluentKit.Model
 
-    static var usernameKey: KeyPath<Self, Self.Field<String>> { get }
-//    static var idKey: KeyPath<Self, Self.Field<UUID>> { get }
+    static var idKey: KeyPath<Self, Self.ID<UUID>> { get }
 
     func deposit(on db: Database, to: WalletType, amount: Double, confirmed: Bool, meta: [String: String]?) throws -> EventLoopFuture<Void>
     func withdraw(on db: Database, from: WalletType, amount: Double, meta: [String: String]?) -> EventLoopFuture<Void>
@@ -24,13 +23,9 @@ public protocol HasWallet: FluentKit.Model {
 }
 
 extension HasWallet {
-    var _$username: Field<String> {
-        self[keyPath: Self.usernameKey]
+    var _$idKey: ID<UUID> {
+        self[keyPath: Self.idKey]
     }
-    
-//    var _$idKey: Field<UUID> {
-//        self[keyPath: Self.idKey]
-//    }
 }
 
 
@@ -42,7 +37,7 @@ extension HasWallet {
     }
     
     public func createDefaultWallet(on db: Database) throws -> EventLoopFuture<Void> {
-        let wallet: Wallet = Wallet(ownerID: self._$username.value!)
+        let wallet: Wallet = Wallet(ownerID: self._$idKey.value!)
         return wallet.save(on: db)
     }
     

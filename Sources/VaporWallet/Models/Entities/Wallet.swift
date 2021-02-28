@@ -19,7 +19,7 @@ final class Wallet: Model, Content {
     var name: String
     
     @Field(key: "owner_id")
-    var owner: String
+    var owner: UUID
     
     @Field(key: "balance")
     var balance: Double
@@ -43,7 +43,7 @@ final class Wallet: Model, Content {
     
     init(
         id: UUID? = nil,
-        ownerID: String,
+        ownerID: UUID,
         name: String = WalletType.default.string,
         balance: Double = 0,
         decimalPlaces: UInt8 = 2,
