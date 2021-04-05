@@ -8,12 +8,12 @@
 import Vapor
 import Fluent
 
-final class Wallet: Model, Content {
+public final class Wallet: Model, Content {
     
-    static let schema = "wallets"
+    public static let schema = "wallets"
     
     @ID(key: .id)
-    var id: UUID?
+    public var id: UUID?
     
     @Field(key: "name")
     var name: String
@@ -39,7 +39,7 @@ final class Wallet: Model, Content {
     @Children(for: \.$wallet)
     var transactions: [WalletTransaction]
 
-    init() {}
+    public init() {}
     
     init(
         id: UUID? = nil,
