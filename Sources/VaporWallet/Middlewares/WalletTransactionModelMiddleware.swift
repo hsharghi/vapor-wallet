@@ -13,14 +13,12 @@ import Fluent
 public struct WalletTransactionMiddleware: ModelMiddleware {
     
     public func create(model: WalletTransaction, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
-        // The model can be altered here before it is created.
-        
         return next.create(model, on: db).flatMap {
             return model
-                .wallet
-                .refreshBalance(on: db)
-                .transform(to: db.eventLoop.future(()))
+                .$wallet.get(on: db)
+                .map { $0.refreshBalance(on: db) }
+                .transform(to: ())
         }
     }
-    
 }
+
