@@ -12,11 +12,16 @@ public struct CreateWalletTransaction: Migration {
                 .field("amount", .double, .required)
                 .field("confirmed", .bool, .required)
                 .field("meta", .json)
+                .field("created_at", .datetime, .required)
+                .field("updated_at", .datetime, .required)
                 .create()
         }
     }
     
     public func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema(Wallet.schema).delete()
+        return database.enum("type").deleteCase("deposit").deleteCase("withdraw").update().flatMap { _ in
+            return database.schema(WalletTransaction.schema).delete()
+        }
+        
     }
 }
