@@ -30,12 +30,12 @@ let package = Package(
             dependencies: [
                 .product(name: "Vapor", package: "vapor"),
                 .product(name: "Fluent", package: "fluent"),
-                .product(name: "FluentSQLiteDriver", package: "fluent-sqlite-driver"),
-                .product(name: "FluentMySQLDriver", package: "fluent-mysql-driver"),
             ]),
         .testTarget(name: "VaporWalletTests", dependencies: [
             .target(name: "VaporWallet"),
             .product(name: "XCTVapor", package: "vapor"),
+            .product(name: "FluentSQLiteDriver", package: "fluent-sqlite-driver"),
+            .product(name: "FluentMySQLDriver", package: "fluent-mysql-driver"),
         ]),
     ]
 )
