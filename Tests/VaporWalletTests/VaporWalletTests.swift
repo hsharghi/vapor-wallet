@@ -13,8 +13,8 @@ class VaporWalletTests: XCTestCase {
         super.setUp()
         
         app = Application(.testing)
-        app.databases.use(.mysql(hostname: "127.0.0.1", port: 3306, username: "root", password: "hadi2400", database: "vp-test", tlsConfiguration: .none), as: .mysql)
-//                app.databases.use(.sqlite(.memory), as: .sqlite)
+//        app.databases.use(.mysql(hostname: "127.0.0.1", port: 3306, username: "root", password: "hadi2400", database: "vp-test", tlsConfiguration: .none), as: .mysql)
+                app.databases.use(.sqlite(.memory), as: .sqlite)
         
         try! migrations(app)
         try! app.autoRevert().wait()
