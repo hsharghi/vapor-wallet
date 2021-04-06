@@ -64,3 +64,18 @@ public final class WalletTransaction: Model {
     }
 
 }
+
+
+extension WalletTransaction {
+    
+    public var isConfirmed: Bool {
+        return self.confirmed
+    }
+    
+    public func confirm(on db: Database) -> EventLoopFuture<Void> {
+        self.confirmed = true
+        return self.update(on: db)
+    }
+    
+    
+}
