@@ -43,11 +43,11 @@ extension HasWallet {
         return wallet.save(on: db)
     }
     
-    func wallets(on db: Database) -> EventLoopFuture<[Wallet]> {
+    public func wallets(on db: Database) -> EventLoopFuture<[Wallet]> {
         Wallet.query(on: db).filter(\.$owner == self._$idKey.value!).all()
     }
     
-    func wallet(on db: Database, type name: WalletType) -> EventLoopFuture<Wallet> {
+    public func wallet(on db: Database, type name: WalletType) -> EventLoopFuture<Wallet> {
         Wallet.query(on: db)
             .filter(\.$owner == self._$idKey.value!)
             .filter(\.$name == name.string)
@@ -55,7 +55,7 @@ extension HasWallet {
             .unwrap(or: WalletError.walletNotFound(name: name.string))
     }
     
-    func defaultWallet(on db: Database) -> EventLoopFuture<Wallet> {
+    public func defaultWallet(on db: Database) -> EventLoopFuture<Wallet> {
         wallet(on: db, type: .default)
     }
     
@@ -63,7 +63,7 @@ extension HasWallet {
 
 extension HasWallet {
     
-    func walletBalance(on db: Database, type name: WalletType = .default) -> EventLoopFuture<Double> {
+    public func walletBalance(on db: Database, type name: WalletType = .default) -> EventLoopFuture<Double> {
         self.wallet(on: db, type: name).map { $0.balance }
     }
     
