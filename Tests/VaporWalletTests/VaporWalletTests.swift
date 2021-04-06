@@ -165,6 +165,49 @@ class VaporWalletTests: XCTestCase {
     }
 
     
+    func testTransactionMetadata() throws {
+        app.databases.middleware.use(WalletMiddleware<User>())
+        
+        let user = try User.create(on: app.db)
+        
+        try! user.deposit(on: app.db, amount: 10, confirmed: true, meta: ["description": "payment of taxes"]).wait()
+
+        let transaction = try user.wallet(on: app.db, type: .default).wait()
+            .$transactions.get(on: app.db).wait()
+            .first!
+        
+        XCTAssertEqual(transaction.meta!["description"] , "payment of taxes")
+    }
+    
+    
+    func testConfirmTransaction() throws {
+        app.databases.middleware.use(WalletMiddleware<User>())
+        app.databases.middleware.use(WalletTransactionMiddleware())
+
+        let user = try User.create(on: app.db)
+        
+        try! user.deposit(on: app.db, amount: 10, confirmed: true).wait()
+        try! user.deposit(on: app.db, amount: 40, confirmed: false).wait()
+
+        var balance = try user.walletBalance(on: app.db).wait()
+        XCTAssertEqual(balance, 10)
+
+        let transaction = try user.wallet(on: app.db, type: .default).wait()
+            .$transactions.get(on: app.db).wait()
+            .last!
+        
+        try transaction.confirm(on: app.db).wait()
+
+        balance = try user.walletBalance(on: app.db).wait()
+        XCTAssertEqual(balance, 10)
+
+        try user.defaultWallet(on: app.db).wait()
+            .refreshBalance(on: app.db).transform(to: ()).wait()
+        
+        balance = try user.walletBalance(on: app.db).wait()
+        XCTAssertEqual(balance, 50)
+
+    }
     
     
     
