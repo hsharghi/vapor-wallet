@@ -11,8 +11,16 @@ import Fluent
 
 extension HasWallet {
     
-    public func walletBalance(on db: Database, type name: WalletType = .default) -> EventLoopFuture<Double> {
-        self.wallet(on: db, type: name).map { $0.balance }
+    public func walletBalance(on db: Database, type name: WalletType = .default, with unconfirmed: Bool = false) -> EventLoopFuture<Double> {
+        if unconfirmed {
+            return self.wallet(on: db, type: name).flatMap { wallet  in
+                wallet.$transactions
+                    .query(on: db)
+                    .sum(\.$amount)
+                    .unwrap(orReplace: 0)
+            }
+        }
+        return self.wallet(on: db, type: name).map { $0.balance }
     }
     
     public func canWithdraw(on db: Database, from: WalletType = .default, amount: Double) -> EventLoopFuture<Bool> {
@@ -49,7 +57,7 @@ extension HasWallet {
                 }
             }
     }
-
+    
     
     
 }
