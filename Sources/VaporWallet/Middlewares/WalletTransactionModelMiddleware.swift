@@ -12,6 +12,8 @@ import Fluent
 
 public struct WalletTransactionMiddleware: ModelMiddleware {
     
+    public init() {}
+
     public func create(model: WalletTransaction, on db: Database, next: AnyModelResponder) -> EventLoopFuture<Void> {
         return next.create(model, on: db).flatMap {
             return model
