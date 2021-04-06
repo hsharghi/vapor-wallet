@@ -19,7 +19,7 @@ public protocol HasWallet: FluentKit.Model {
     func canWithdraw(on db: Database, from: WalletType, amount: Double) -> EventLoopFuture<Bool>
     func wallets(on db: Database) -> EventLoopFuture<[Wallet]>
     func wallet(on db: Database, type name: WalletType) -> EventLoopFuture<Wallet>
-    func walletBalance(on db: Database, type name: WalletType, with unconfirmed: Bool) -> EventLoopFuture<Double>
+    func walletBalance(on db: Database, type name: WalletType, withUnconfirmed: Bool) -> EventLoopFuture<Double>
     
 }
 

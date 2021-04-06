@@ -11,8 +11,8 @@ import Fluent
 
 extension HasWallet {
     
-    public func walletBalance(on db: Database, type name: WalletType = .default, with unconfirmed: Bool = false) -> EventLoopFuture<Double> {
-        if unconfirmed {
+    public func walletBalance(on db: Database, type name: WalletType = .default, withUnconfirmed: Bool = false) -> EventLoopFuture<Double> {
+        if withUnconfirmed {
             return self.wallet(on: db, type: name).flatMap { wallet  in
                 wallet.$transactions
                     .query(on: db)
