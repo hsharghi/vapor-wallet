@@ -36,10 +36,8 @@ final class User: Model {
 }
 
 extension User: HasWallet {
-    
-    typealias Owner = User
-    
-    static let idKey = \Owner.$id
+        
+    static let idKey = \User.$id
     
 }
 
