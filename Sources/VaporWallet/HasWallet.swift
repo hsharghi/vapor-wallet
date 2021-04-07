@@ -9,9 +9,7 @@
 import Vapor
 import Fluent
 
-public protocol HasWallet: FluentKit.Model {
-    associatedtype Owner: FluentKit.Model
-    
+public protocol HasWallet: FluentKit.Model {    
     static var idKey: KeyPath<Self, Self.ID<UUID>> { get }
     
     func deposit(on db: Database, to: WalletType, amount: Double, confirmed: Bool, meta: [String: String]?) throws -> EventLoopFuture<Void>
