@@ -27,7 +27,7 @@ extension HasWallet {
         self.wallet(on: db, type: from).flatMap { $0.refreshBalance(on: db).map { $0 >= amount } }
     }
     
-    public func deposit(on db: Database, to: WalletType = .default, amount: Double, confirmed: Bool, meta: [String: String]? = nil) throws -> EventLoopFuture<Void> {
+    public func deposit(on db: Database, to: WalletType = .default, amount: Double, confirmed: Bool = true, meta: [String: String]? = nil) throws -> EventLoopFuture<Void> {
         self.wallet(on: db, type: to).flatMap { wallet -> EventLoopFuture<Void> in
             return db.transaction { database -> EventLoopFuture<Void> in
                 do {
@@ -58,7 +58,14 @@ extension HasWallet {
             }
     }
     
-    
+    public func unconfirmedTransactions(on db: Database, type name: WalletType = .default) -> EventLoopFuture<[WalletTransaction]> {
+        return self.wallet(on: db, type: name).flatMap {
+            $0.$transactions
+                .query(on: db)
+                .filter(\.$confirmed == false)
+                .all()
+        }
+    }
     
 }
 
