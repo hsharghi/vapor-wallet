@@ -190,7 +190,9 @@ class VaporWalletTests: XCTestCase {
         try! user.deposit(on: app.db, amount: 40, confirmed: false).wait()
 
         var balance = try user.walletBalance(on: app.db).wait()
+        let unconfirmedBalance = try user.walletBalance(on: app.db, type: .default, withUnconfirmed: true).wait()
         XCTAssertEqual(balance, 10)
+        XCTAssertEqual(unconfirmedBalance, 50)
 
         let transaction = try user.wallet(on: app.db, type: .default).wait()
             .$transactions.get(on: app.db).wait()
