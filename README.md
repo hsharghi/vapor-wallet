@@ -58,6 +58,8 @@ app.migrations.add(CreateWalletTransaction())
 
 Now `User` instances can have access to a wallet.
 
+### Using wallets repository
+
 ~~~~swift
 
 let repo = user.walletsRepository(on: db)
