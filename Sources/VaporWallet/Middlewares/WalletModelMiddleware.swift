@@ -17,8 +17,8 @@ public struct WalletMiddleware<M:HasWallet>: ModelMiddleware {
 
         // Create `default` wallet when new model is created
         return next.create(model, on: db).flatMap {
-             ("default wallet for user \(model._$idKey) has been created")
-            return model.walletsRepo(on: db).create().transform(to: ())
+            db.logger.log(level: .info, "default wallet for user \(model._$idKey) has been created")
+            return model.walletsRepository(on: db).create().transform(to: ())
         }
     }
 }
