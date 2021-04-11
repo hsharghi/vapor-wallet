@@ -9,14 +9,18 @@
 import Foundation
 
 public struct WalletType: Hashable, Codable {
-    public let string: String
-    public init(string: String) {
-        self.string = string
+    private let string: String
+    public init(name: String) {
+        self.string = name
     }
 }
 
 extension WalletType {
     public static var `default`: WalletType {
-        return .init(string: "default")
+        return .init(name: "default")
+    }
+    
+    public var value: String {
+        return self.string
     }
 }
