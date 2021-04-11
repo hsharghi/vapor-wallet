@@ -44,7 +44,7 @@ public final class Wallet: Model, Content {
     init(
         id: UUID? = nil,
         ownerID: UUID,
-        name: String = WalletType.default.string,
+        name: String = WalletType.default.value,
         balance: Double = 0,
         decimalPlaces: UInt8 = 2,
         createdAt: Date? = nil,
