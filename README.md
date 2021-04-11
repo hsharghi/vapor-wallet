@@ -12,7 +12,7 @@ This package is inspired by ![laravel-wallet](https://github.com/bavix/laravel-w
 In your `Package.swift` file, add the following
 
 ~~~~swift
-.package(url: "https://github.com/hsharghi/vapor-wallet.git", from: "0.6")
+.package(url: "https://github.com/hsharghi/vapor-wallet.git", from: "0.8")
 
 .target(name: "App", dependencies: [
     .product(name: "Vapor", package: "vapor"),
@@ -60,12 +60,13 @@ Now `User` instances can have access to a wallet.
 
 ~~~~swift
 
-try user.createWallet(on: db, type: .default)
+let repo = user.walletsRepository(on: db)
 
-try user.deposit(on: db, to: .default, amount: 100)
+try repo.create()
 
-try user.withdraw(on: db, from: .default, amount: 20, ["description": "buy some cool feature"])
-    
+try repo.deposit(amount: 100)
+try repo.withdraw(amount: 20, ["description": "buy some cool feature"])
+
 ~~~~
 
 ##### Auto create wallet 
@@ -73,7 +74,7 @@ try user.withdraw(on: db, from: .default, amount: 20, ["description": "buy some 
 If you want a default wallet to be created when a model is saved to database you can use the provided database middleware with the package:
 
 ~~~~swift
-app.databases.middleware.use(WalletMiddleware<User>(), on: .psql)
+app.databases.middleware.use(WalletMiddleware<User>())
 ~~~~
 
 ##### Wallet balance
@@ -81,20 +82,25 @@ app.databases.middleware.use(WalletMiddleware<User>(), on: .psql)
 Wallet balance is not automatically refreshed on every transaction by default. You need to refresh balance to get the updated balance of the wallet.
 
 ~~~~swift
-user.wallet(on: db, type: .default).map { wallet in
-    wallet.refreshBalance(on: db).map { balance in
+
+try repo.create()
+try repo.deposit(amount: 100)
+
+repo.default().map { defaultWallet in 
+    defaultWallet.refreshBalance(on: db).map { balance in
         // balance is a Double
     }
 }
+
 ~~~~
 
 It is recommended to add the provided database middleware to auto-refresh wallet balance with each transaction (deposit/withdraw).
 
 ~~~~swift
-app.databases.middleware.use(WalletTransactionMiddleware(), on: .psql)
+app.databases.middleware.use(WalletTransactionMiddleware())
 
 
-user.walletBalance(on: db).map { balance in 
+repo.balance().map { balance in 
     // balance is allways up-to-date 
 }
 
@@ -107,14 +113,14 @@ Deposit to a wallet can be unconfirmed. It will not calculated in wallet balance
 
 ~~~~swift
 
-user.deposit(on: db, amount: 100, confirmed: false)
+repo.deposit(amount: 100, confirmed: false)
 // balance is 0
 
-user.unconfirmedTransactions(on: db).map { transactions in
+repo.unconfirmedTransactions().map { transactions in
     transactions.map { $0.confirm(on: db) }
 }
 
-user.defaultWallet(on: db).refereshBalance(on: db)
+repo.default().refereshBalance(on: db)
 
 // balance is 100
 ~~~~
