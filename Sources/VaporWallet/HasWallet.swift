@@ -9,21 +9,21 @@
 import Vapor
 import Fluent
 
-public protocol HasWallet: FluentKit.Model {    
+public protocol HasWallet: FluentKit.Model {
+    associatedtype Owner: FluentKit.Model
+    
     static var idKey: KeyPath<Self, Self.ID<UUID>> { get }
-    
-    func deposit(on db: Database, to: WalletType, amount: Double, confirmed: Bool, meta: [String: String]?) throws -> EventLoopFuture<Void>
-    func withdraw(on db: Database, from: WalletType, amount: Double, meta: [String: String]?) -> EventLoopFuture<Void>
-    func canWithdraw(on db: Database, from: WalletType, amount: Double) -> EventLoopFuture<Bool>
-    func wallets(on db: Database) -> EventLoopFuture<[Wallet]>
-    func wallet(on db: Database, type name: WalletType) -> EventLoopFuture<Wallet>
-    func walletBalance(on db: Database, type name: WalletType, withUnconfirmed: Bool) -> EventLoopFuture<Double>
-    
+    func walletsRepository(on db: Database) -> WalletsRepository<Self>
+        
 }
 
 extension HasWallet {
     var _$idKey: ID<UUID> {
         self[keyPath: Self.idKey]
+    }
+    
+    func walletsRepository(on db: Database) -> WalletsRepository<Self> {
+        return WalletsRepository(db: db, idKey: self._$idKey)
     }
 }
 
