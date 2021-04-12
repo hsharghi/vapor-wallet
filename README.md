@@ -11,7 +11,7 @@
 In your `Package.swift` file, add the following
 
 ~~~~swift
-.package(url: "https://github.com/hsharghi/vapor-wallet.git", from: "0.8")
+.package(url: "https://github.com/hsharghi/vapor-wallet.git", from: "0.9")
 
 .target(name: "App", dependencies: [
     .product(name: "Vapor", package: "vapor"),
