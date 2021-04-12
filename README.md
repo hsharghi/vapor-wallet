@@ -112,7 +112,7 @@ repo.balance().map { balance in
 ##### Confirm deposit
 
 Deposit to a wallet can be unconfirmed. It will not calculated in wallet balance. you can confirm it later by accessing the transaction's `confirm` method.
-After confirming transaction(s), you need to call `refreshBalance()` method to update the wallet's balance.
+After confirming transaction(s), wallets balance is automatically refreshed (unless use `autoRefresh: false` parameter). But if you confirm a transaction manually by running fluent queries,   you need to call `refreshBalance()` method to update the wallet's balance.
 
 ~~~~swift
 
@@ -120,11 +120,23 @@ repo.deposit(amount: 100, confirmed: false)
 // balance is 0
 
 repo.unconfirmedTransactions().map { transactions in
-    transactions.map { $0.confirm(on: db) }
+    transactions.map { repo.confirm(transaction: $0 }
 }
+// balance is 100
 
-repo.default().refereshBalance(on: db)
+// OR
 
+repo.confirmAll(type: .default)
+// balance is 100
+
+
+// manuallty confirm transactions
+wallet.$transactions.query(on: db)
+.set(\.$confirmed, to: true)
+.update()
+// balance is 0
+
+repo.refreshBalance()
 // balance is 100
 ~~~~
 
