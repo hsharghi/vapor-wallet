@@ -87,10 +87,8 @@ Wallet balance is not automatically refreshed on every transaction by default. Y
 try repo.create()
 try repo.deposit(amount: 100)
 
-repo.default().map { defaultWallet in 
-    defaultWallet.refreshBalance(on: db).map { balance in
-        // balance is a Double
-    }
+repo.default().balance().map { balance in 
+    // balance is Double(100)
 }
 
 ~~~~
@@ -136,7 +134,7 @@ wallet.$transactions.query(on: db)
 // balance is 0
 
 repo.refreshBalance()
-// balance is 100
+// now balance is 100
 ~~~~
 
 
