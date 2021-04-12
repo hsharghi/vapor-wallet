@@ -125,4 +125,37 @@ public class WalletsRepository<M:HasWallet> {
         }
     }
 
+    public func confirmAll(type name: WalletType = .default) -> EventLoopFuture<Double> {
+        get(type: name).flatMap { (wallet) -> EventLoopFuture<Double> in
+            self.db.transaction { (database) -> EventLoopFuture<Double> in
+                wallet.$transactions
+                    .query(on: database)
+                    .set(\.$confirmed, to: true)
+                    .update()
+                    .flatMap { _ -> EventLoopFuture<Double> in
+                        wallet.refreshBalance(on: database)
+                }
+            }
+        }
+    }
+    
+    
+    public func confirm(transaction: WalletTransaction, refresh: Bool = true) -> EventLoopFuture<Double> {
+        transaction.confirmed = true
+        return self.db.transaction { (database) -> EventLoopFuture<Double> in
+            transaction.update(on: database).flatMap { () -> EventLoopFuture<Double> in
+                transaction.$wallet.get(on: database).flatMap { wallet -> EventLoopFuture<Double> in
+                    wallet.refreshBalance(on: database)
+                }
+            }
+        }
+    }
+    
+    public func refreshBalance(of walletType: WalletType = .default) -> EventLoopFuture<Double> {
+        return get(type: walletType).flatMap { wallet -> EventLoopFuture<Double> in
+            wallet.refreshBalance(on: self.db)
+        }
+    }
+    
+    
 }
