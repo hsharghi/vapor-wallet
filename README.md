@@ -141,3 +141,61 @@ repo.refreshBalance()
 ~~~~
 
 
+#### Multiple wallets
+
+Any model conformed to `HasWallet` can have multiple wallets. 
+
+~~~~swift
+
+let savingsWallet = WalletType(name: "savings")
+let myWallet = WalletType(name: "my-wallet")
+
+repo.create(type: myWallet)
+repo.create(type: savingsWallet)
+
+repo.deposit(to: myWallet, amount: 100)
+repo.deposit(to: savingsWallet, amount: 15)
+
+repo.withdraw(from: myWallet, amount: 25)
+repo.balance(type: myWallet)
+// balance is 75
+
+~~~~
+
+
+#### Working with fractional numbers
+All transaction amounts and wallet balances are stored as `Integer` values. But balance is allways returned as `Double`. So if you like you can get wallet balance as a decimal value based on decimal places of the wallet.
+Deposit and withdraw amounts can be both `Integer` or `Double`, but at the end both will be stored as `Integer`
+
+~~~~swift
+
+repo.create(type: .default, decimalPlaces: 2)
+repo.deposit(amount: 100)
+repo.balance().map { balance in 
+    // balance is Double(100)
+}
+
+repo.deposit(amount: 1.45)
+repo.balance().map { balance in 
+    // balance is Double(245)   100+145
+}
+
+repo.balance(asDecimal: true).map { balance in 
+    // Double(2.45)
+}
+
+~~~~
+
+All fractional amounts in transactions will be truncated to `decimalPlaces` of the wallet. Default value when creating a wallet is 2.
+
+
+~~~~swift
+
+repo.create(type: .default, decimalPlaces: 2)
+repo.deposit(amount: 1.555)
+repo.balance().map { balance in 
+    // balance is 155 not 155.5 and not 1555 
+}
+
+
+~~~~
