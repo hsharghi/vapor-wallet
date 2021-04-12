@@ -22,10 +22,10 @@ public final class Wallet: Model, Content {
     var owner: UUID
     
     @Field(key: "balance")
-    var balance: Double
+    var balance: Int
     
     @Field(key: "decimal_places")
-    var decimalPlaces: UInt8?
+    var decimalPlaces: UInt8
     
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
@@ -45,7 +45,7 @@ public final class Wallet: Model, Content {
         id: UUID? = nil,
         ownerID: UUID,
         name: String = WalletType.default.value,
-        balance: Double = 0,
+        balance: Int = 0,
         decimalPlaces: UInt8 = 2,
         createdAt: Date? = nil,
         updatedAt: Date? = nil,

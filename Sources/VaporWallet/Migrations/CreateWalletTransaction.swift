@@ -9,7 +9,7 @@ public struct CreateWalletTransaction: Migration {
                 .id()
                 .field("wallet_id", .uuid, .required, .references(Wallet.schema, "id", onDelete: .cascade))
                 .field("type", transactionType, .required)
-                .field("amount", .double, .required)
+                .field("amount", .int, .required)
                 .field("confirmed", .bool, .required)
                 .field("meta", .json)
                 .field("created_at", .datetime, .required)

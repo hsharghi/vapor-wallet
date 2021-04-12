@@ -11,7 +11,7 @@ public struct CreateWallet<M:HasWallet>: Migration {
             .id()
             .field("name", .string, .required)
             .field("owner_id", .uuid, .required, .references(M.schema, .init(stringLiteral: self.idKey), onDelete: .cascade))
-            .field("balance", .double, .required)
+            .field("balance", .int, .required)
             .field("decimal_places", .uint8, .required)
             .field("created_at", .datetime, .required)
             .field("updated_at", .datetime, .required)

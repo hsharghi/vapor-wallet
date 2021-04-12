@@ -27,7 +27,7 @@ public final class WalletTransaction: Model {
     var type: TransactionType
     
     @Field(key: "amount")
-    var amount: Double
+    var amount: Int
     
     @Field(key: "confirmed")
     var confirmed: Bool
@@ -47,7 +47,7 @@ public final class WalletTransaction: Model {
         id: UUID? = nil,
         walletID: UUID,
         type: TransactionType,
-        amount: Double,
+        amount: Int,
         confirmed: Bool = true,
         meta: [String: String]? = nil,
         createdAt: Date? = nil,
