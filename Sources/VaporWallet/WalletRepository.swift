@@ -21,9 +21,9 @@ public class WalletsRepository<M:HasWallet> {
     private var db: Database
     private var id: M.ID<UUID>.Value
 
-    public func create(type name: WalletType = .default, decimalPlaces: UInt8 = 2) -> EventLoopFuture<Wallet> {
+    public func create(type name: WalletType = .default, decimalPlaces: UInt8 = 2) -> EventLoopFuture<Void> {
         let wallet: Wallet = Wallet(ownerID: self.id, name: name.value, decimalPlaces: decimalPlaces)
-        return wallet.save(on: db).map { wallet }
+        return wallet.save(on: db)
     }
     
     public func all() -> EventLoopFuture<[Wallet]> {
@@ -52,12 +52,12 @@ public class WalletsRepository<M:HasWallet> {
                     .sum(\.$amount)
                     .unwrap(orReplace: 0)
                     .map { (intBalance) -> Double in
-                        return asDecimal ? Double(intBalance).rounded(to: wallet.decimalPlaces) : Double(intBalance)
+                        return asDecimal ? Double(intBalance).toDecimal(with: wallet.decimalPlaces) : Double(intBalance)
                     }
             }
         }
         return get(type: name).map { wallet in
-            return asDecimal ? Double(wallet.balance).rounded(to: wallet.decimalPlaces) : Double(wallet.balance)
+            return asDecimal ? Double(wallet.balance).toDecimal(with: wallet.decimalPlaces) : Double(wallet.balance)
         }
     }
 
@@ -65,18 +65,14 @@ public class WalletsRepository<M:HasWallet> {
         get(type: from).flatMap { $0.refreshBalance(on: self.db).map { $0 >= Double(amount) } }
     }
     
-    public func deposit(to: WalletType = .default, amount: Double, confirmed: Bool = true, meta: [String: String]? = nil) throws -> EventLoopFuture<Void> {
+    public func deposit(to: WalletType = .default, amount: Double, confirmed: Bool = true, meta: [String: String]? = nil) -> EventLoopFuture<Void> {
         get(type: to).flatMap { wallet -> EventLoopFuture<Void> in
-            let intAmount = Int(amount * Double(wallet.decimalPlaces))
-            do {
-                return try self.deposit(to: to, amount: intAmount, confirmed: confirmed, meta: meta)
-            } catch {
-                return self.db.eventLoop.makeFailedFuture(WalletError.walletNotFound(name: to.value))
-            }
+            let intAmount = Int(amount * pow(10, Double(wallet.decimalPlaces)))
+            return self.deposit(to: to, amount: intAmount, confirmed: confirmed, meta: meta)
         }
     }
     
-    public func deposit(to: WalletType = .default, amount: Int, confirmed: Bool = true, meta: [String: String]? = nil) throws -> EventLoopFuture<Void> {
+    public func deposit(to: WalletType = .default, amount: Int, confirmed: Bool = true, meta: [String: String]? = nil) -> EventLoopFuture<Void> {
         get(type: to).flatMap { wallet -> EventLoopFuture<Void> in
             return self.db.transaction { database -> EventLoopFuture<Void> in
                 do {
@@ -89,6 +85,12 @@ public class WalletsRepository<M:HasWallet> {
         }
     }
     
+    public func withdraw(from: WalletType = .default, amount: Double, meta: [String: String]? = nil) -> EventLoopFuture<Void> {
+        get(type: from).flatMap { wallet -> EventLoopFuture<Void> in
+            let intAmount = Int(amount * pow(10, Double(wallet.decimalPlaces)))
+            return self.withdraw(from: from, amount: intAmount, meta: meta)
+        }
+    }
 
     public func withdraw(from: WalletType = .default, amount: Int, meta: [String: String]? = nil) -> EventLoopFuture<Void> {
         
@@ -167,14 +169,4 @@ public class WalletsRepository<M:HasWallet> {
     }
     
     
-}
-
-
-extension Double {
-    func rounded(to decimalPlaces: UInt8) -> Double {
-        let rule = pow(10, Double(decimalPlaces))
-        var r = self * rule
-        r.round(.towardZero)
-        return r / rule
-    }
 }
