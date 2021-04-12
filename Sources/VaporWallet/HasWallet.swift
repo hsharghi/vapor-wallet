@@ -35,7 +35,7 @@ extension Wallet {
             .flatMap { (balance) -> EventLoopFuture<Double> in
                 self.balance = balance
                 return self.update(on: db).map {
-                    return balance
+                    return Double(balance)
                 }
             }
     }
