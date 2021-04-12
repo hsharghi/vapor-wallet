@@ -14,13 +14,13 @@ class VaporWalletTests: XCTestCase {
         
         app = Application(.testing)
         app.logger.logLevel = .debug
-//        app.databases.use(.mysql(hostname: "127.0.0.1", port: 3306, username: "root", password: "root", database: "vp-test", tlsConfiguration: .none), as: .mysql)
-        app.databases.use(.sqlite(.memory), as: .sqlite)
+        app.databases.use(.mysql(hostname: "127.0.0.1", port: 3306, username: "root", password: "hadi2400", database: "vp-test", tlsConfiguration: .none), as: .mysql)
+//        app.databases.use(.sqlite(.memory), as: .sqlite)
         
         try! migrations(app)
         try! app.autoRevert().wait()
         try! app.autoMigrate().wait()
-//        try! resetDB()
+        try! resetDB()
         
     }
     
@@ -191,7 +191,34 @@ class VaporWalletTests: XCTestCase {
         XCTAssertEqual(transaction.meta!["description"] , "payment of taxes")
     }
 
+    func testWalletDecimalBalance() throws {
+        app.databases.middleware.use(WalletTransactionMiddleware())
 
+        let user = try User.create(on: app.db)
+        let wallets = user.walletsRepository(on: app.db)
+        try wallets.create(type: .default, decimalPlaces: 2).wait()
+
+        try wallets.deposit(amount: 100).wait()
+        
+        var balance = try wallets.balance().wait()
+        XCTAssertEqual(balance, 100)
+        
+        try wallets.deposit(amount: 1.45).wait()
+        balance = try wallets.balance().wait()
+        XCTAssertEqual(balance, 245)
+        
+        balance = try wallets.balance(asDecimal: true).wait()
+        XCTAssertEqual(balance, 2.45)
+        
+        
+        // decmial values will be truncated to wallet's decimalPlace value
+        try wallets.deposit(amount: 1.555).wait()
+        balance = try wallets.balance().wait()
+        XCTAssertEqual(balance, 400)
+
+    }
+    
+    
     func testConfirmTransaction() throws {
         app.databases.middleware.use(WalletMiddleware<User>())
         app.databases.middleware.use(WalletTransactionMiddleware())
