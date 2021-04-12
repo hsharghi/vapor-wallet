@@ -21,8 +21,8 @@ public class WalletsRepository<M:HasWallet> {
     private var db: Database
     private var id: M.ID<UUID>.Value
 
-    public func create(type name: WalletType = .default) -> EventLoopFuture<Wallet> {
-        let wallet: Wallet = Wallet(ownerID: self.id, name: name.value)
+    public func create(type name: WalletType = .default, decimalPlaces: UInt8 = 2) -> EventLoopFuture<Wallet> {
+        let wallet: Wallet = Wallet(ownerID: self.id, name: name.value, decimalPlaces: decimalPlaces)
         return wallet.save(on: db).map { wallet }
     }
     
@@ -44,30 +44,39 @@ public class WalletsRepository<M:HasWallet> {
         get(type: .default)
     }
     
-    public func balance(type name: WalletType = .default, withUnconfirmed: Bool = false) -> EventLoopFuture<Double> {
+    public func balance(type name: WalletType = .default, withUnconfirmed: Bool = false, asDecimal: Bool = false) -> EventLoopFuture<Double> {
         if withUnconfirmed {
             return get(type: name).flatMap { wallet  in
                 wallet.$transactions
                     .query(on: self.db)
                     .sum(\.$amount)
                     .unwrap(orReplace: 0)
+                    .map { (intBalance) -> Double in
+                        return asDecimal ? Double(intBalance).rounded(to: wallet.decimalPlaces) : Double(intBalance)
+                    }
             }
         }
-        return get(type: name).map { $0.balance }
+        return get(type: name).map { wallet in
+            return asDecimal ? Double(wallet.balance).rounded(to: wallet.decimalPlaces) : Double(wallet.balance)
+        }
     }
 
-    public func canWithdraw(from: WalletType = .default, amount: Double) -> EventLoopFuture<Bool> {
-        get(type: from).flatMap { $0.refreshBalance(on: self.db).map { $0 >= amount } }
-    }
-    
-    public func dep() -> EventLoopFuture<Void> {
-        return self.default().flatMap { wallet -> EventLoopFuture<Void> in
-            let tr = WalletTransaction(walletID: wallet.id!, type: .deposit, amount: 100)
-            return wallet.$transactions.create(tr, on: self.db)
-        }
+    public func canWithdraw(from: WalletType = .default, amount: Int) -> EventLoopFuture<Bool> {
+        get(type: from).flatMap { $0.refreshBalance(on: self.db).map { $0 >= Double(amount) } }
     }
     
     public func deposit(to: WalletType = .default, amount: Double, confirmed: Bool = true, meta: [String: String]? = nil) throws -> EventLoopFuture<Void> {
+        get(type: to).flatMap { wallet -> EventLoopFuture<Void> in
+            let intAmount = Int(amount * Double(wallet.decimalPlaces))
+            do {
+                return try self.deposit(to: to, amount: intAmount, confirmed: confirmed, meta: meta)
+            } catch {
+                return self.db.eventLoop.makeFailedFuture(WalletError.walletNotFound(name: to.value))
+            }
+        }
+    }
+    
+    public func deposit(to: WalletType = .default, amount: Int, confirmed: Bool = true, meta: [String: String]? = nil) throws -> EventLoopFuture<Void> {
         get(type: to).flatMap { wallet -> EventLoopFuture<Void> in
             return self.db.transaction { database -> EventLoopFuture<Void> in
                 do {
@@ -81,7 +90,7 @@ public class WalletsRepository<M:HasWallet> {
     }
     
 
-    public func withdraw(from: WalletType = .default, amount: Double, meta: [String: String]? = nil) -> EventLoopFuture<Void> {
+    public func withdraw(from: WalletType = .default, amount: Int, meta: [String: String]? = nil) -> EventLoopFuture<Void> {
         
         canWithdraw(from: from, amount: amount)
             .guard({ $0 == true }, else: WalletError.insufficientBalance)
@@ -158,4 +167,14 @@ public class WalletsRepository<M:HasWallet> {
     }
     
     
+}
+
+
+extension Double {
+    func rounded(to decimalPlaces: UInt8) -> Double {
+        let rule = pow(10, Double(decimalPlaces))
+        var r = self * rule
+        r.round(.towardZero)
+        return r / rule
+    }
 }
