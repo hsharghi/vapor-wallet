@@ -88,8 +88,7 @@ class VaporWalletTests: XCTestCase {
 
         XCTAssertEqual(balance, 0)
 
-        let wallet = try! wallets.default().wait()
-        let refreshedBalance = try! wallet.refreshBalance(on: app.db).wait()
+        let refreshedBalance = try wallets.refreshBalance().wait()
         XCTAssertEqual(refreshedBalance, 10)
 
     }
@@ -212,16 +211,28 @@ class VaporWalletTests: XCTestCase {
             .wait()
             .items.first!
 
-        try transaction.confirm(on: app.db).wait()
+        balance = try wallets.confirm(transaction: transaction).wait()
 
-        balance = try wallets.balance().wait()
-        XCTAssertEqual(balance, 10)
-
-        try wallets.default().wait()
-            .refreshBalance(on: app.db).transform(to: ()).wait()
-
-        balance = try wallets.balance().wait()
         XCTAssertEqual(balance, 50)
+
+    }
+    
+    func testConfirmAllTransactionsOfWallet() throws {
+        app.databases.middleware.use(WalletMiddleware<User>())
+        app.databases.middleware.use(WalletTransactionMiddleware())
+
+        let (_, wallets) = setupUserAndWalletsRepo(on: app.db)
+        
+        try wallets.deposit(amount: 10, confirmed: false).wait()
+        try wallets.deposit(amount: 40, confirmed: false).wait()
+        
+        var balance = try wallets.balance().wait()
+        XCTAssertEqual(balance, 0)
+
+        balance = try wallets.confirmAll().wait()
+
+        XCTAssertEqual(balance, 50)
+
 
     }
     
