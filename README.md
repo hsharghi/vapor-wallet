@@ -1,8 +1,16 @@
 # VaporWallet
 
-![Swift](http://img.shields.io/badge/swift-5.2-brightgreen.svg)
-![Vapor](http://img.shields.io/badge/vapor-4.0-brightgreen.svg)
-
+<p align="center">
+    <a href="https://vapor.codes">
+        <img src="http://img.shields.io/badge/Vapor-4-brightgreen.svg" alt="Vapor Logo">
+    </a>
+    <a href="https://swift.org">
+        <img src="http://img.shields.io/badge/Swift-5.2-brightgreen.svg" alt="Swift 5.2 Logo">
+    </a>
+    <a href="https://raw.githubusercontent.com/lloople/vapor-maker-commands/main/LICENSE">
+        <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License">
+    </a>
+</p>
 
 ### vapor-wallet - Easy to work with virtual wallet for Swift Vapor framework
 
