@@ -20,7 +20,7 @@ extension HasWallet {
         self[keyPath: Self.idKey]
     }
     
-    func walletsRepository(on db: Database) -> WalletsRepository<Self> {
+    public func walletsRepository(on db: Database) -> WalletsRepository<Self> {
         return WalletsRepository(db: db, idKey: self._$idKey)
     }
 }
