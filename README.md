@@ -178,6 +178,7 @@ let repo2 = user2.walletsRepository(on: db)
 
 repo2.default().map { walletUser2 in
     repo1.transfer(from: .default, to: walletUser2, amount: 10)
+    // this will transfer 10 from user1's default wallet to user2's default wallet
 }
 
 ~~~~
