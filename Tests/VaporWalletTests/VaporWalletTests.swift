@@ -259,9 +259,67 @@ class VaporWalletTests: XCTestCase {
         balance = try wallets.confirmAll().wait()
 
         XCTAssertEqual(balance, 50)
+    }
+    
+    
+    func testTransferBetweenAUsersWallets() throws {
+        app.databases.middleware.use(WalletMiddleware<User>())
+        app.databases.middleware.use(WalletTransactionMiddleware())
+        
+        let (_, wallets) = setupUserAndWalletsRepo(on: app.db)
+        
+        let wallet1 = WalletType(name: "wallet1")
+        let wallet2 = WalletType(name: "wallet2")
+        
+        try wallets.create(type: wallet1).wait()
+        try wallets.create(type: wallet2).wait()
+        
+        
+        try wallets.deposit(to: wallet1, amount: 100).wait()
 
+        try wallets.transafer(from: wallet1, to: wallet2, amount: 20).wait()
+        
+        let balance1 = try wallets.balance(type: wallet1).wait()
+        let balance2 = try wallets.balance(type: wallet2).wait()
+        
+        XCTAssertEqual(balance1, 80)
+        XCTAssertEqual(balance2, 20)
 
     }
+    
+    func testTransferBetweenTwoUsersWallets() throws {
+        app.databases.middleware.use(WalletMiddleware<User>())
+        app.databases.middleware.use(WalletTransactionMiddleware())
+
+        let user1 = try User.create(username: "user1", on: app.db)
+        let user2 = try User.create(username: "user2", on: app.db)
+                
+        let repo1 = user1.walletsRepository(on: app.db)
+        let repo2 = user2.walletsRepository(on: app.db)
+        
+        try repo1.deposit(amount: 100).wait()
+                
+        try repo1.transafer(from: try repo1.default().wait(), to: try repo2.default().wait(), amount: 20).wait()
+        
+        var balance1 = try repo1.balance().wait()
+        var balance2 = try repo2.balance().wait()
+        
+        XCTAssertEqual(balance1, 80)
+        XCTAssertEqual(balance2, 20)
+
+        try repo1.transfer(from: .default, to: try repo2.default().wait(), amount: 20).wait()
+        
+        balance1 = try repo1.balance().wait()
+        balance2 = try repo2.balance().wait()
+        
+        XCTAssertEqual(balance1, 60)
+        XCTAssertEqual(balance2, 40)
+
+    }
+    
+    
+    
+    
     
     private func setupUserAndWalletsRepo(on: Database) -> (User, WalletsRepository<User>) {
         let user = try! User.create(on: app.db)
