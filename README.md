@@ -14,6 +14,8 @@
 
 ### VaporWallet - Easy to work with virtual wallet for Swift Vapor framework
 
+This package is inspired by  <a href="https://github.com/bavix/laravel-wallet">Laravel-Wallet</a>   
+
 ## Usage guide
 
 In your `Package.swift` file, add the following
