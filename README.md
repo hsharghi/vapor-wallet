@@ -159,6 +159,31 @@ repo.balance(type: myWallet)
 
 ~~~~
 
+### Transfering funds between wallets
+Funds can be transfered between wallets of same user or different users. Transfering funds between wallets of a single user can be done with wallet types, 
+
+
+~~~~swift
+
+repo.transfer(from: myWallet, to: savingsWallet, amount: 10)
+
+~~~~
+
+But transfering funds to a wallet of another user requires to get the wallet model first, then transfer the fund to it.
+
+~~~~swift
+
+let repo1 = user1.walletsRepository(on: db)
+let repo2 = user2.walletsRepository(on: db)
+
+repo2.default().map { walletUser2 in
+    repo1.transfer(from: .default, to: walletUser2, amount: 10)
+}
+
+~~~~
+
+
+
 
 #### Working with fractional numbers
 All transaction amounts and wallet balances are stored as `Integer` values. But balance is allways returned as `Double`. So if you like you can get wallet balance as a decimal value based on decimal places of the wallet.
