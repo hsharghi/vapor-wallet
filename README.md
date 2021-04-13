@@ -12,7 +12,7 @@
     </a>
 </p>
 
-### vapor-wallet - Easy to work with virtual wallet for Swift Vapor framework
+### VaporWallet - Easy to work with virtual wallet for Swift Vapor framework
 
 ## Usage guide
 
@@ -230,3 +230,10 @@ repo.balance().map { balance in
 
 
 ~~~~
+
+
+## Known issues
+
+- Using `HasWallet` protocol is limited to models with `UUID` primary key.
+- Transfering funds between wallets with different `decimalPlaces` values have unknown result.
+
