@@ -21,7 +21,7 @@ This package is inspired by  <a href="https://github.com/bavix/laravel-wallet">L
 In your `Package.swift` file, add the following
 
 ~~~~swift
-.package(url: "https://github.com/hsharghi/vapor-wallet.git", from: "0.9")
+.package(url: "https://github.com/hsharghi/vapor-wallet.git", from: "0.9.3")
 
 .target(name: "App", dependencies: [
     .product(name: "Vapor", package: "vapor"),
