@@ -52,6 +52,11 @@ class VaporWalletTests: XCTestCase {
         XCTAssert(user.username == "user1")
     }
     
+    func testAddGame() throws {
+        let game = try Game.create(name: "new_game", on: app.db)
+        XCTAssert(game.name == "new_game")
+    }
+    
     func testUserHasNoDefaultWallet() throws {
         let userWithNoWallet = try User.create(on: app.db)
         XCTAssertThrowsError(try userWithNoWallet.walletsRepository(on: app.db).default().wait(), "expected throw") { (error) in
@@ -318,6 +323,31 @@ class VaporWalletTests: XCTestCase {
     }
     
     
+    func testMultiModelWallet() throws {
+        app.databases.middleware.use(WalletMiddleware<User>())
+        app.databases.middleware.use(WalletMiddleware<Game>())
+        app.databases.middleware.use(WalletTransactionMiddleware())
+
+        let user = try User.create(username: "user1", on: app.db)
+        let game = Game(id: user.id, name: "game1")
+        try game.save(on: app.db).wait()
+        
+        let repo1 = user.walletsRepository(on: app.db)
+        let repo2 = game.walletsRepository(on: app.db)
+
+        try repo1.deposit(amount: 100).wait()
+        try repo2.deposit(amount: 500).wait()
+        
+        var balance1 = try repo1.balance().wait()
+        var balance2 = try repo2.balance().wait()
+        
+        XCTAssertEqual(balance1, 100)
+        XCTAssertEqual(balance2, 500)
+
+
+
+    }
+    
     
     
     
@@ -331,7 +361,8 @@ class VaporWalletTests: XCTestCase {
     private func migrations(_ app: Application) throws {
         // Initial Migrations
         app.migrations.add(CreateUser())
-        app.migrations.add(CreateWallet<User>())
+        app.migrations.add(CreateGame())
+        app.migrations.add(CreateWallet())
         app.migrations.add(CreateWalletTransaction())
     }
 }

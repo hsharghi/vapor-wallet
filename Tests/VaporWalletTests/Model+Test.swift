@@ -56,3 +56,51 @@ struct CreateUser: Migration {
 }
 
 
+
+final class Game: Model {
+    static let schema = "games"
+    
+    @ID(key: .id)
+    var id: UUID?
+    
+    @Field(key: "name")
+    var name: String
+    
+    init() {}
+    
+    init(
+        id: UUID? = nil,
+        name: String
+    ) {
+        self.id = id
+        self.name = name
+    }
+    
+    public static func create(name: String = "game1", on database: Database) throws -> Game {
+        let game = Game(name: name)
+        try game.save(on: database).wait()
+        return game
+    }
+}
+
+extension Game: HasWallet {
+        
+    static let idKey = \Game.$id
+    
+}
+
+
+struct CreateGame: Migration {
+    func prepare(on database: Database) -> EventLoopFuture<Void> {
+        return database.schema(Game.schema)
+            .id()
+            .field("name", .string, .required)
+            .create()
+    }
+    
+    func revert(on database: Database) -> EventLoopFuture<Void> {
+        return database.schema(Game.schema).delete()
+    }
+}
+
+

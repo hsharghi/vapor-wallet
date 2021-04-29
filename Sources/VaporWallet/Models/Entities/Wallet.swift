@@ -14,12 +14,15 @@ public final class Wallet: Model, Content {
     
     @ID(key: .id)
     public var id: UUID?
+   
+    @Field(key: "owner_id")
+    var owner: UUID
+
+    @Field(key: "owner_type")
+    var ownerType: String
     
     @Field(key: "name")
     var name: String
-    
-    @Field(key: "owner_id")
-    var owner: UUID
     
     @Field(key: "balance")
     var balance: Int
@@ -43,6 +46,7 @@ public final class Wallet: Model, Content {
     
     init(
         id: UUID? = nil,
+        ownerType: String,
         ownerID: UUID,
         name: String = WalletType.default.value,
         balance: Int = 0,
@@ -52,6 +56,7 @@ public final class Wallet: Model, Content {
         deletedAt: Date? = nil
     ) {
         self.id = id
+        self.ownerType = ownerType
         self.owner = ownerID
         self.name = name
         self.balance = balance

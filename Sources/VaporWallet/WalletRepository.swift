@@ -31,7 +31,7 @@ public class WalletsRepository<M:HasWallet> {
 extension WalletsRepository {
     
     public func create(type name: WalletType = .default, decimalPlaces: UInt8 = 2) -> EventLoopFuture<Void> {
-        let wallet: Wallet = Wallet(ownerID: self.id, name: name.value, decimalPlaces: decimalPlaces)
+        let wallet: Wallet = Wallet(ownerType: String(describing: self), ownerID: self.id, name: name.value, decimalPlaces: decimalPlaces)
         return wallet.save(on: db)
     }
     
