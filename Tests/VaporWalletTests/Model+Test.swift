@@ -36,7 +36,7 @@ final class User: Model {
 }
 
 extension User: HasWallet {
-        
+    
     static let idKey = \User.$id
     
 }
@@ -52,6 +52,19 @@ struct CreateUser: Migration {
     
     func revert(on database: Database) -> EventLoopFuture<Void> {
         return database.schema(User.schema).delete()
+    }
+}
+
+struct CreateUserAsync: AsyncMigration {
+    func prepare(on database: Database) async throws {
+        try await database.schema(User.schema)
+            .id()
+            .field("username", .string, .required)
+            .create()
+    }
+    
+    func revert(on database: Database) async throws {
+        try await database.schema(User.schema).delete()
     }
 }
 
@@ -84,7 +97,7 @@ final class Game: Model {
 }
 
 extension Game: HasWallet {
-        
+    
     static let idKey = \Game.$id
     
 }
@@ -100,6 +113,20 @@ struct CreateGame: Migration {
     
     func revert(on database: Database) -> EventLoopFuture<Void> {
         return database.schema(Game.schema).delete()
+    }
+}
+
+
+struct CreateGameAsync: AsyncMigration {
+    func prepare(on database: Database) async throws {
+        try await database.schema(Game.schema)
+            .id()
+            .field("name", .string, .required)
+            .create()
+    }
+    
+    func revert(on database: Database) async throws {
+        try await database.schema(Game.schema).delete()
     }
 }
 

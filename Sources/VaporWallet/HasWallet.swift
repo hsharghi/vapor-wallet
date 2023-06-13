@@ -26,6 +26,17 @@ extension HasWallet {
 }
 
 extension Wallet {
+    public func refreshBalanceAsync(on db: Database) async throws -> Double {
+        let balance = try await self.$transactions
+            .query(on: db)
+            .filter(\.$confirmed == true)
+            .sum(\.$amount)
+            .get()
+        self.balance = balance ?? 0
+        try await self.update(on: db)
+        return Double(self.balance)
+    }
+    
     public func refreshBalance(on db: Database) -> EventLoopFuture<Double> {
         self.$transactions
             .query(on: db)

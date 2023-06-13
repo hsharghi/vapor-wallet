@@ -22,3 +22,15 @@ public struct WalletMiddleware<M:HasWallet>: ModelMiddleware {
         }
     }
 }
+
+public struct AsyncWalletMiddleware<M:HasWallet>: AsyncModelMiddleware {
+    
+    public init() {}
+
+    public func create(model: M, on db: Database, next: AnyAsyncModelResponder) async throws {
+        try await next.create(model, on: db)
+        db.logger.log(level: .info, "default wallet for user \(model._$idKey) has been created")
+        let repo = model.walletsRepository(on: db)
+        try await repo.createAsyc()
+    }
+}

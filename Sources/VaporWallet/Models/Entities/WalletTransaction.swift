@@ -77,5 +77,10 @@ extension WalletTransaction {
         return self.update(on: db)
     }
     
+    public func confirmAsync(on db: Database) async throws {
+        self.confirmed = true
+        try await self.update(on: db)
+    }
+    
     
 }
