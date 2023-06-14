@@ -24,6 +24,9 @@ public final class Wallet: Model, Content {
     @Field(key: "name")
     var name: String
     
+    @Field(key: "min_allowed_balance")
+    var minAllowedBalance: Int
+
     @Field(key: "balance")
     var balance: Int
     
@@ -49,6 +52,7 @@ public final class Wallet: Model, Content {
         ownerType: String,
         ownerID: UUID,
         name: String = WalletType.default.value,
+        minAllowedBalance: Int = 0,
         balance: Int = 0,
         decimalPlaces: UInt8 = 2,
         createdAt: Date? = nil,
@@ -59,6 +63,7 @@ public final class Wallet: Model, Content {
         self.ownerType = ownerType
         self.owner = ownerID
         self.name = name
+        self.minAllowedBalance = minAllowedBalance
         self.balance = balance
         self.decimalPlaces = decimalPlaces
         self.createdAt = createdAt
