@@ -36,11 +36,12 @@ public struct CreateWalletTransactionAsync: AsyncMigration {
     public init() { }
     
     public func prepare(on database: Database) async throws {
-        let transactionType = try await database.enum("type")
+        _ = try await database.enum("type")
             .case("deposit")
             .case("withdraw")
             .create()
-        
+
+        let transactionType = try await database.enum("type").read()
         try await database.schema(WalletTransaction.schema)
             .id()
             .field("wallet_id", .uuid, .required, .references(Wallet.schema, "id", onDelete: .cascade))
@@ -55,10 +56,7 @@ public struct CreateWalletTransactionAsync: AsyncMigration {
     
     
     public func revert(on database: Database) async throws {
-        let _ =  try await database.enum("type")
-            .deleteCase("deposit")
-            .deleteCase("withdraw")
-            .update()
+        let _ =  try await database.enum("type").delete()
         try await database.schema(WalletTransaction.schema).delete()
     }
     
