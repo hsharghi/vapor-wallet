@@ -33,7 +33,7 @@ public class WalletsRepository<M:HasWallet> {
 extension WalletsRepository {
     
     public func createAsync(type name: WalletType = .default, decimalPlaces: UInt8 = 2, minAllowedBalance: Int = 0) async throws {
-        let wallet: Wallet = Wallet(ownerType: String(describing: self),
+        let wallet: Wallet = Wallet(ownerType: self.type,
                                     ownerID: self.id,
                                     name: name.value,
                                     minAllowedBalance: minAllowedBalance,
@@ -373,7 +373,7 @@ extension WalletsRepository {
         try await db.transaction { database in
             var walletTransaction: WalletTransaction
             do {
-                walletTransaction = WalletTransaction(walletID: try to.requireID(), type: .deposit, amount: amount, confirmed: confirmed, meta: meta)
+                walletTransaction = WalletTransaction(walletID: try to.requireID(), transactionType: .deposit, amount: amount, confirmed: confirmed, meta: meta)
             } catch {
                 throw WalletError.walletNotFound(name: to.name)
             }
@@ -385,7 +385,7 @@ extension WalletsRepository {
         try await db.transaction { database in
             var walletTransaction: WalletTransaction
             do {
-                walletTransaction = WalletTransaction(walletID: try from.requireID(), type: .withdraw, amount: -1 * amount, meta: meta)
+                walletTransaction = WalletTransaction(walletID: try from.requireID(), transactionType: .withdraw, amount: -1 * amount, meta: meta)
             } catch {
                 throw WalletError.walletNotFound(name: from.name)
             }
