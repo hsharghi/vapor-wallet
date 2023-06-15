@@ -31,7 +31,7 @@ extension Wallet {
             .query(on: db)
             .filter(\.$confirmed == true)
             .sum(\.$amount)
-            .get()
+        
         self.balance = balance ?? 0
         try await self.update(on: db)
         return Double(self.balance)

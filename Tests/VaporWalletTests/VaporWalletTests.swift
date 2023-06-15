@@ -17,15 +17,15 @@ class VaporWalletTests: XCTestCase {
         app = Application(.testing)
         app.logger.logLevel = .debug
 
-//        app.databases.use(.postgres(
-//            hostname: "localhost",
-//            port: 5432,
-//            username: "catgpt",
-//            password: "catgpt",
-//            database: "catgpt"
-//        ), as: .psql)
-        //        app.databases.use(.mysql(hostname: "127.0.0.1", port: 3306, username: "vapor", password: "vapor", database: "vp-test"), as: .mysql)
-        app.databases.use(.sqlite(.file("catgpt-sqlite-db.sqlite")), as: .sqlite)
+        app.databases.use(.postgres(
+            hostname: "localhost",
+            port: 5432,
+            username: "catgpt",
+            password: "catgpt",
+            database: "catgpt"
+        ), as: .psql)
+//                app.databases.use(.mysql(hostname: "127.0.0.1", port: 3306, username: "vapor", password: "vapor", database: "vp-test"), as: .mysql)
+//        app.databases.use(.sqlite(.memory), as: .sqlite)
         
         try! migrations(app)
         try! app.autoRevert().wait()
@@ -368,25 +368,57 @@ class VaporWalletTests: XCTestCase {
         app.databases.middleware.use(AsyncWalletMiddleware<Game>())
         app.databases.middleware.use(AsyncWalletTransactionMiddleware())
 
-        let user = try await User.create(username: "user1", on: app.db)
-        let game = Game(id: user.id, name: "game1")
-        try await game.save(on: app.db)
+        do {
+            let user = try await User.create(username: "user1", on: app.db)
+            let game = Game(id: user.id, name: "game1")
+            try await game.save(on: app.db)
+            
+            let repo1 = user.walletsRepository(on: app.db)
+            let repo2 = game.walletsRepository(on: app.db)
+            
+            try await repo1.depositAsync(amount: 100)
+            try await repo2.depositAsync(amount: 500)
+                        
+            let balance1 = try await repo1.balanceAsync()
+            let balance2 = try await repo2.balanceAsync()
+            
+            XCTAssertEqual(balance1, 100)
+            XCTAssertEqual(balance2, 500)
+        } catch {
+            print("error: \(String(reflecting: error))")
+        }
 
-        let repo1 = user.walletsRepository(on: app.db)
-        let repo2 = game.walletsRepository(on: app.db)
+    }
 
-        try await repo1.depositAsync(amount: 100)
-//        try await repo2.depositAsync(amount: 500)
+    func testMultiModelWalletTransfer() async throws {
+        app.databases.middleware.use(AsyncWalletMiddleware<User>())
+        app.databases.middleware.use(AsyncWalletMiddleware<Game>())
+        app.databases.middleware.use(AsyncWalletTransactionMiddleware())
 
-//        let userWallet = try await repo1.getAsync(type: .default)
-//        let gameWallet = try await repo2.getAsync(type: .default)
-        
-//        let balance1 = try await repo1.balanceAsync()
-//        let balance2 = try await repo2.balanceAsync()
-//
-//        XCTAssertEqual(balance1, 100)
-//        XCTAssertEqual(balance2, 500)
-
+        do {
+            let user = try await User.create(username: "user1", on: app.db)
+            let game = Game(id: user.id, name: "game1")
+            try await game.save(on: app.db)
+            
+            let repo1 = user.walletsRepository(on: app.db)
+            let repo2 = game.walletsRepository(on: app.db)
+            
+            try await repo1.depositAsync(amount: 100)
+            try await repo2.depositAsync(amount: 500)
+            
+            let userWallet = try await repo1.defaultAsync()
+            let gameWallet = try await repo2.defaultAsync()
+            
+            try await repo1.transferAsync(from: gameWallet, to: userWallet, amount: 100)
+                        
+            let balance1 = try await repo1.balanceAsync()
+            let balance2 = try await repo2.balanceAsync()
+            
+            XCTAssertEqual(balance1, 200)
+            XCTAssertEqual(balance2, 400)
+        } catch {
+            print("###### error: #########\n\(String(reflecting: error))")
+        }
 
     }
 
@@ -405,7 +437,7 @@ class VaporWalletTests: XCTestCase {
         app.migrations.add(CreateUser())
         app.migrations.add(CreateGame())
         app.migrations.add(CreateWallet())
-        app.migrations.add(CreateWalletTransaction())
+        app.migrations.add(CreateWalletTransactionAsync())
     }
 }
 
