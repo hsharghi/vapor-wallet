@@ -27,7 +27,7 @@ extension HasWallet {
 }
 
 extension Wallet {
-    public func refreshBalanceAsync(on db: Database) async throws -> Double {
+    public func refreshBalance(on db: Database) async throws -> Double {
         
         var balance: Int
         // Temporary workaround for sum and average aggregates on Postgres DB
@@ -53,19 +53,5 @@ extension Wallet {
         return Double(self.balance)
     }
     
-    public func refreshBalance(on db: Database) -> EventLoopFuture<Double> {
-        // Temporary workaround for sum and average aggregates on Postgres DB
-        self.$transactions
-            .query(on: db)
-            .filter(\.$confirmed == true)
-            .sum(\.$amount)
-            .unwrap(orReplace: 0)
-            .flatMap { (balance) -> EventLoopFuture<Double> in
-                self.balance = balance
-                return self.update(on: db).map {
-                    return Double(balance)
-                }
-            }
-    }
 }
 

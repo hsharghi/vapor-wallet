@@ -42,31 +42,19 @@ extension User: HasWallet {
 }
 
 
-struct CreateUser: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema(User.schema)
+
+struct CreateUser: AsyncMigration {
+    func prepare(on database: Database) async throws {
+        try await database.schema(User.schema)
             .id()
             .field("username", .string, .required)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema(User.schema).delete()
+    func revert(on database: Database) async throws {
+        try await database.schema(User.schema).delete()
     }
 }
-//
-//struct CreateUserAsync: AsyncMigration {
-//    func prepare(on database: Database) async throws {
-//        try await database.schema(User.schema)
-//            .id()
-//            .field("username", .string, .required)
-//            .create()
-//    }
-//
-//    func revert(on database: Database) async throws {
-//        try await database.schema(User.schema).delete()
-//    }
-//}
 
 
 
@@ -103,31 +91,17 @@ extension Game: HasWallet {
 }
 
 
-struct CreateGame: Migration {
-    func prepare(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema(Game.schema)
+struct CreateGame: AsyncMigration {
+    func prepare(on database: Database) async throws {
+        try await database.schema(Game.schema)
             .id()
             .field("name", .string, .required)
             .create()
     }
 
-    func revert(on database: Database) -> EventLoopFuture<Void> {
-        return database.schema(Game.schema).delete()
+    func revert(on database: Database) async throws {
+        try await database.schema(Game.schema).delete()
     }
 }
 
-//
-//struct CreateGameAsync: AsyncMigration {
-//    func prepare(on database: Database) async throws {
-//        try await database.schema(Game.schema)
-//            .id()
-//            .field("name", .string, .required)
-//            .create()
-//    }
-//
-//    func revert(on database: Database) async throws {
-//        try await database.schema(Game.schema).delete()
-//    }
-//}
-//
 

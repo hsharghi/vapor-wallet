@@ -73,12 +73,7 @@ extension WalletTransaction {
         return self.confirmed
     }
     
-    public func confirm(on db: Database) -> EventLoopFuture<Void> {
-        self.confirmed = true
-        return self.update(on: db)
-    }
-    
-    public func confirmAsync(on db: Database) async throws {
+    public func confirm(on db: Database) async throws {
         self.confirmed = true
         try await self.update(on: db)
     }
