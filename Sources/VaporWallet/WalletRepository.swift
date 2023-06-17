@@ -7,6 +7,7 @@
 
 import Vapor
 import Fluent
+import FluentPostgresDriver
 
 /// This calss gives access to wallet methods for a `HasWallet` model.
 /// Creating multiple wallets, accessing them and getting balance of each wallet,
@@ -53,7 +54,7 @@ extension WalletsRepository {
             .filter(\.$owner == self.id)
             .filter(\.$ownerType == self.type)
             .filter(\.$name == name.value)
-
+        
         if (withTransactions) {
             walletQuery = walletQuery.with(\.$transactions)
         }
@@ -72,13 +73,21 @@ extension WalletsRepository {
     public func balanceAsync(type name: WalletType = .default, withUnconfirmed: Bool = false, asDecimal: Bool = false) async throws -> Double {
         let wallet = try await getAsync(type: name)
         if withUnconfirmed {
-            let intBalance = try await wallet.$transactions
-                .query(on: self.db)
-                .sum(\.$amount)
-                .get()
-            
-            let balance = intBalance == nil ? 0.0 : Double(intBalance!)
-            
+            // (1) Temporary workaround for sum and average aggregates,
+            var balance: Double
+            if let _ = self.db as? PostgresDatabase {
+                let balanceOptional = try? await wallet.$transactions
+                    .query(on: self.db)
+                    .aggregate(.sum, \.$amount, as: Double.self)
+                
+                balance = balanceOptional ?? 0.0
+            } else {
+                let intBalance = try await wallet.$transactions
+                    .query(on: self.db)
+                    .sum(\.$amount)
+                
+                balance = intBalance == nil ? 0.0 : Double(intBalance!)
+            }
             return asDecimal ? balance.toDecimal(with: wallet.decimalPlaces) : balance
         }
         return asDecimal ? Double(wallet.balance).toDecimal(with: wallet.decimalPlaces) : Double(wallet.balance)
