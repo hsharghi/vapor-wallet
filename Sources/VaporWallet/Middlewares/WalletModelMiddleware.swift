@@ -8,7 +8,7 @@
 
 import Vapor
 import Fluent
-
+//
 public struct WalletMiddleware<M:HasWallet>: ModelMiddleware {
     
     public init() {}
@@ -20,5 +20,17 @@ public struct WalletMiddleware<M:HasWallet>: ModelMiddleware {
             db.logger.log(level: .info, "default wallet for user \(model._$idKey) has been created")
             return model.walletsRepository(on: db).create().transform(to: ())
         }
+    }
+}
+
+public struct AsyncWalletMiddleware<M:HasWallet>: AsyncModelMiddleware {
+    
+    public init() {}
+
+    public func create(model: M, on db: Database, next: AnyAsyncModelResponder) async throws {
+        try await next.create(model, on: db)
+        db.logger.log(level: .info, "default wallet for user \(model._$idKey) has been created")
+        let repo = model.walletsRepository(on: db)
+        try await repo.createAsync()
     }
 }

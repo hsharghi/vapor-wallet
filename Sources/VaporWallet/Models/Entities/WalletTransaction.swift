@@ -9,13 +9,14 @@ import Vapor
 import Fluent
 
 
+enum TransactionType: String, Content {
+    case deposit, withdraw
+}
+
 public final class WalletTransaction: Model {
     
     public static let schema = "wallet_transactions"
-    
-    enum TransactionType: String, Content {
-        case deposit, withdraw
-    }
+
     
     @ID(key: .id)
     public var id: UUID?
@@ -23,8 +24,8 @@ public final class WalletTransaction: Model {
     @Parent(key: "wallet_id")
     var wallet: Wallet
     
-    @Enum(key: "type")
-    var type: TransactionType
+    @Enum(key: "transaction_type")
+    var transactionType: TransactionType
     
     @Field(key: "amount")
     var amount: Int
@@ -46,7 +47,7 @@ public final class WalletTransaction: Model {
     init(
         id: UUID? = nil,
         walletID: UUID,
-        type: TransactionType,
+        transactionType: TransactionType,
         amount: Int,
         confirmed: Bool = true,
         meta: [String: String]? = nil,
@@ -55,7 +56,7 @@ public final class WalletTransaction: Model {
     ) {
         self.id = id
         self.$wallet.id = walletID
-        self.type = type
+        self.transactionType = transactionType
         self.amount = amount
         self.meta = meta
         self.confirmed = confirmed
@@ -75,6 +76,11 @@ extension WalletTransaction {
     public func confirm(on db: Database) -> EventLoopFuture<Void> {
         self.confirmed = true
         return self.update(on: db)
+    }
+    
+    public func confirmAsync(on db: Database) async throws {
+        self.confirmed = true
+        try await self.update(on: db)
     }
     
     
