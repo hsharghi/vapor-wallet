@@ -13,7 +13,7 @@ import FluentPostgresDriver
 public protocol HasWallet: FluentKit.Model {    
     static var idKey: KeyPath<Self, Self.ID<UUID>> { get }
     func walletsRepository(on db: Database) -> WalletsRepository<Self>
-        
+    
 }
 
 extension HasWallet {
@@ -28,7 +28,7 @@ extension HasWallet {
 
 extension Wallet {
     public func refreshBalanceAsync(on db: Database) async throws -> Double {
-
+        
         var balance: Int
         // Temporary workaround for sum and average aggregates on Postgres DB
         if let _ = db as? PostgresDatabase {
@@ -36,7 +36,7 @@ extension Wallet {
                 .query(on: db)
                 .filter(\.$confirmed == true)
                 .aggregate(.sum, \.$amount, as: Double.self)
-
+            
             balance = balanceOptional == nil ? 0 : Int(balanceOptional!)
         } else {
             let intBalance = try await self.$transactions
@@ -48,23 +48,24 @@ extension Wallet {
         }
         
         self.balance = balance
-
+        
         try await self.update(on: db)
         return Double(self.balance)
     }
-//    
-//    public func refreshBalance(on db: Database) -> EventLoopFuture<Double> {
-//        self.$transactions
-//            .query(on: db)
-//            .filter(\.$confirmed == true)
-//            .sum(\.$amount)
-//            .unwrap(orReplace: 0)
-//            .flatMap { (balance) -> EventLoopFuture<Double> in
-//                self.balance = balance
-//                return self.update(on: db).map {
-//                    return Double(balance)
-//                }
-//            }
-//    }
+    
+    public func refreshBalance(on db: Database) -> EventLoopFuture<Double> {
+        // Temporary workaround for sum and average aggregates on Postgres DB
+        self.$transactions
+            .query(on: db)
+            .filter(\.$confirmed == true)
+            .sum(\.$amount)
+            .unwrap(orReplace: 0)
+            .flatMap { (balance) -> EventLoopFuture<Double> in
+                self.balance = balance
+                return self.update(on: db).map {
+                    return Double(balance)
+                }
+            }
+    }
 }
 
