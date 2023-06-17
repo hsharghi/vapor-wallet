@@ -59,7 +59,7 @@ import VaporWallet
 public func configure(_ app: Application) throws {
 ...
 
-app.migrations.add(CreateWallet<User>())
+app.migrations.add(CreateWallet())
 app.migrations.add(CreateWalletTransaction())
 
 ...
@@ -73,33 +73,36 @@ Now `User` instances can have access to a wallet.
 
 let repo = user.walletsRepository(on: db)
 
-try repo.create()
+try await repo.create()
 
-try repo.deposit(amount: 100)
-try repo.withdraw(amount: 20, ["description": "buy some cool feature"])
+try await repo.deposit(amount: 100)
+try await repo.withdraw(amount: 20, ["description": "paid for some cool stuff"])
 
 ~~~~
 
 ##### Auto create wallet 
 
-If you want a default wallet to be created when a model is saved to database you can use the provided database middleware with the package:
+If you want a default wallet to be automatically created when a model is saved to database you can use the provided database middleware with the package:
 
 ~~~~swift
 app.databases.middleware.use(WalletMiddleware<User>())
 ~~~~
-
+Now for every `User` model saved to database, a `default` wallet will be created.
+ 
 ##### Wallet balance
 
 Wallet balance is not automatically refreshed on every transaction by default. You need to refresh balance to get the updated balance of the wallet.
 
 ~~~~swift
 
-try repo.create()
-try repo.deposit(amount: 100)
+try await repo.create()
+try await repo.deposit(amount: 100)
 
-repo.default().balance().map { balance in 
-    // balance is Double(100)
-}
+let balance = try await repo.balance() 
+// balance is Double(0)
+
+let refreshedBalance = try await repo.refreshBalance()
+// refreshedBalance is Double(100)
 
 ~~~~
 
@@ -108,10 +111,9 @@ It is recommended to add the provided database middleware to auto-refresh wallet
 ~~~~swift
 app.databases.middleware.use(WalletTransactionMiddleware())
 
-
-repo.balance().map { balance in 
-    // balance is allways up-to-date 
-}
+try await repo.deposit(amount: 100)
+let balance = try await repo.balance()
+// balance is allways up-to-date 
 
 ~~~~
 
@@ -123,27 +125,26 @@ After confirming transaction(s), wallets balance is automatically refreshed (unl
 
 ~~~~swift
 
-repo.deposit(amount: 100, confirmed: false)
+try await repo.deposit(amount: 100, confirmed: false)
 // balance is 0
 
-repo.unconfirmedTransactions().map { transactions in
-    transactions.map { repo.confirm(transaction: $0 }
-}
-// balance is 100
+let unconfirmedBalance = try await wallets.balance(withUnconfirmed: true)
+// unconfirmedBalance is 100
 
 // OR
 
-repo.confirmAll(type: .default)
-// balance is 100
+try await repo.confirmAll()
+// now balance is 100
 
 
 // manuallty confirm transactions
-wallet.$transactions.query(on: db)
-.set(\.$confirmed, to: true)
-.update()
-// balance is 0
+try await wallet.$transactions
+    .query(on: db)
+    .set(\.$confirmed, to: true)
+    .update()
+// balance still is 0
 
-repo.refreshBalance()
+try await repo.refreshBalance()
 // now balance is 100
 ~~~~
 
@@ -157,14 +158,14 @@ Any model conformed to `HasWallet` can have multiple wallets.
 let savingsWallet = WalletType(name: "savings")
 let myWallet = WalletType(name: "my-wallet")
 
-repo.create(type: myWallet)
-repo.create(type: savingsWallet)
+try await repo.create(type: myWallet)
+try await repo.create(type: savingsWallet)
 
-repo.deposit(to: myWallet, amount: 100)
-repo.deposit(to: savingsWallet, amount: 15)
+try await repo.deposit(to: myWallet, amount: 100)
+try await repo.deposit(to: savingsWallet, amount: 15)
 
-repo.withdraw(from: myWallet, amount: 25)
-repo.balance(type: myWallet)
+try await repo.withdraw(from: myWallet, amount: 25)
+try await repo.balance(type: myWallet)
 // balance is 75
 
 ~~~~
@@ -175,7 +176,7 @@ Funds can be transfered between wallets of same user or different users. Transfe
 
 ~~~~swift
 
-repo.transfer(from: myWallet, to: savingsWallet, amount: 10)
+try await repo.transfer(from: myWallet, to: savingsWallet, amount: 10)
 
 ~~~~
 
@@ -183,13 +184,12 @@ But transfering funds to a wallet of another user requires to get the wallet mod
 
 ~~~~swift
 
-let repo1 = user1.walletsRepository(on: db)
-let repo2 = user2.walletsRepository(on: db)
+let repo1 = try await user1.walletsRepository(on: db)
+let repo2 = try await user2.walletsRepository(on: db)
 
-repo2.default().map { walletUser2 in
-    repo1.transfer(from: .default, to: walletUser2, amount: 10)
-    // this will transfer 10 from user1's default wallet to user2's default wallet
-}
+let walletUser2 = try await repo2.default()
+try await repo1.transfer(from: .default, to: walletUser2, amount: 10)
+// this will transfer 10 from user1's default wallet to user2's default wallet
 
 ~~~~
 
@@ -202,20 +202,20 @@ Deposit and withdraw amounts can be both `Integer` or `Double`, but at the end b
 
 ~~~~swift
 
-repo.create(type: .default, decimalPlaces: 2)
-repo.deposit(amount: 100)
-repo.balance().map { balance in 
-    // balance is Double(100)
-}
+try await repo.create(type: .default, decimalPlaces: 2)
+try await repo.deposit(amount: 100)
+let balance = try await repo.balance() 
+// balance is Double(100)
 
-repo.deposit(amount: 1.45)
-repo.balance().map { balance in 
-    // balance is Double(245)   100+145
-}
 
-repo.balance(asDecimal: true).map { balance in 
-    // Double(2.45)
-}
+try await repo.deposit(amount: 1.45)
+let balance = try await repo.balance() 
+// balance is Double(245)   100+145
+
+
+let decimalBalance = try await repo.balance(asDecimal: true) 
+// Double(2.45)
+
 
 ~~~~
 
@@ -224,12 +224,25 @@ All fractional amounts in transactions will be truncated to `decimalPlaces` of t
 
 ~~~~swift
 
-repo.create(type: .default, decimalPlaces: 2)
-repo.deposit(amount: 1.555)
-repo.balance().map { balance in 
-    // balance is 155 not 155.5 and not 1555 
-}
+try await repo.create(type: .default, decimalPlaces: 2)
+try await repo.deposit(amount: 1.555)
+let balance = try await repo 
+// balance is 155 not 155.5 and not 1555 
 
+
+~~~~
+
+### Minimum allowed balance and negative wallet balance
+When creating a wallet, default minimum allowed balance is set to 0, so the wallet balance can not be negative.
+Any positive or negative value can be set as minimum allowed balance, so you can force a wallet to allways have a minumum balance or even let the wallet to have negative balance.   
+
+~~~~swift
+
+try await repo.create(minAllowedBalance: -50) 
+try await repo.deposite(amount: 100)
+try await repo.withdraw(amount: 130)
+let balance = try await repo.balance()
+// balance is -20
 
 ~~~~
 
