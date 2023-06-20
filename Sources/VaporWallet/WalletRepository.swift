@@ -7,7 +7,9 @@
 
 import Vapor
 import Fluent
+#if canImport(FluentPostgresDriver)
 import FluentPostgresDriver
+#endif
 
 /// This calss gives access to wallet methods for a `HasWallet` model.
 /// Creating multiple wallets, accessing them and getting balance of each wallet,
@@ -75,6 +77,7 @@ extension WalletsRepository {
         if withUnconfirmed {
             // (1) Temporary workaround for sum and average aggregates,
             var balance: Double
+            #if canImport(FluentPostgresDriver)
             if let _ = self.db as? PostgresDatabase {
                 let balanceOptional = try? await wallet.$transactions
                     .query(on: self.db)
@@ -88,6 +91,13 @@ extension WalletsRepository {
                 
                 balance = intBalance == nil ? 0.0 : Double(intBalance!)
             }
+            #else
+            let intBalance = try await wallet.$transactions
+                .query(on: self.db)
+                .sum(\.$amount)
+            
+            balance = intBalance == nil ? 0.0 : Double(intBalance!)
+            #endif
             return asDecimal ? balance.toDecimal(with: wallet.decimalPlaces) : balance
         }
         return asDecimal ? Double(wallet.balance).toDecimal(with: wallet.decimalPlaces) : Double(wallet.balance)
