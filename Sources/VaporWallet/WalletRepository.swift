@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  WalletRepository.swift
 //  
 //
 //  Created by Hadi Sharghi on 4/11/21.
@@ -75,7 +75,7 @@ extension WalletsRepository {
     public func balance(type name: WalletType = .default, withUnconfirmed: Bool = false, asDecimal: Bool = false) async throws -> Double {
         let wallet = try await get(type: name)
         if withUnconfirmed {
-            // (1) Temporary workaround for sum and average aggregates,
+            // (1) Temporary workaround for sum and average aggregates on PostgresDriver
             var balance: Double
             #if canImport(FluentPostgresDriver)
             if let _ = self.db as? PostgresDatabase {
