@@ -25,8 +25,8 @@ public struct CreateWalletTransaction: AsyncMigration {
     
     
     public func revert(on database: Database) async throws {
-        try await database.schema(WalletTransaction.schema).delete()
         try await database.enum("transaction_type").delete()
+        try await database.schema(WalletTransaction.schema).delete()
     }
     
 }
