@@ -35,6 +35,11 @@ public class WalletsRepository<M:HasWallet> {
 ///
 extension WalletsRepository {
     
+    public enum EmptyStrategy {
+        case toZero
+        case toMinAllowed
+    }
+    
     public func create(type name: WalletType = .default, decimalPlaces: UInt8 = 2, minAllowedBalance: Int = 0) async throws {
         let wallet: Wallet = Wallet(ownerType: self.type,
                                     ownerID: self.id,
@@ -71,9 +76,18 @@ extension WalletsRepository {
     public func `default`(withTransactions: Bool = false) async throws -> Wallet {
         return try await get(type: .default, withTransactions: withTransactions)
     }
-    
+ 
     public func balance(type name: WalletType = .default, withUnconfirmed: Bool = false, asDecimal: Bool = false) async throws -> Double {
         let wallet = try await get(type: name)
+        return try await balance(wallet: wallet, withUnconfirmed: withUnconfirmed, asDecimal: asDecimal)
+    }
+    
+    public func refreshBalance(of walletType: WalletType = .default) async throws -> Double {
+        let wallet = try await get(type: walletType)
+        return try await wallet.refreshBalance(on: self.db)
+    }
+    
+    private func balance(wallet: Wallet, withUnconfirmed: Bool = false, asDecimal: Bool = false) async throws -> Double {
         if withUnconfirmed {
             // (1) Temporary workaround for sum and average aggregates on PostgresDriver
             var balance: Double
@@ -103,11 +117,6 @@ extension WalletsRepository {
         return asDecimal ? Double(wallet.balance).toDecimal(with: wallet.decimalPlaces) : Double(wallet.balance)
     }
     
-    public func refreshBalance(of walletType: WalletType = .default) async throws -> Double {
-        let wallet = try await get(type: walletType)
-        return try await wallet.refreshBalance(on: self.db)
-    }
-        
 }
 
 
@@ -124,33 +133,41 @@ extension WalletsRepository {
     public func withdraw(from: WalletType = .default, amount: Double, meta: [String: String]? = nil) async throws {
         let wallet = try await get(type: from)
         let intAmount = Int(amount * pow(10, Double(wallet.decimalPlaces)))
-        guard try await canWithdraw(from: from, amount: intAmount) else {
-            throw WalletError.insufficientBalance
-        }
-        try await self._withdraw(on: self.db, from: wallet, amount: intAmount, meta: meta)
+        try await withdraw(from: wallet, amount: intAmount, meta: meta)
     }
     
     
     public func withdraw(from: WalletType = .default, amount: Int, meta: [String: String]? = nil) async throws {
-        guard try await canWithdraw(from: from, amount: amount) else {
+        let wallet = try await get(type: from)
+        guard try await canWithdraw(from: wallet, amount: amount) else {
             throw WalletError.insufficientBalance
         }
-        let wallet = try await get(type: from)
-        try await self._withdraw(on: self.db, from: wallet, amount: amount, meta: meta)
+        try await withdraw(from: wallet, amount: amount, meta: meta)
     }
     
     
     public func deposit(to: WalletType = .default, amount: Double, confirmed: Bool = true, meta: [String: String]? = nil) async throws {
         let wallet = try await get(type: to)
         let intAmount = Int(amount * pow(10, Double(wallet.decimalPlaces)))
-        try await self._deposit(on: self.db, to: wallet, amount: intAmount, confirmed: confirmed, meta: meta)
+        try await deposit(to: wallet, amount: intAmount, confirmed: confirmed, meta: meta)
     }
     
     public func deposit(to: WalletType = .default, amount: Int, confirmed: Bool = true, meta: [String: String]? = nil) async throws {
         let wallet = try await get(type: to)
-        try await self._deposit(on: self.db, to: wallet, amount: amount, confirmed: confirmed, meta: meta)
+        try await deposit(to: wallet, amount: amount, confirmed: confirmed, meta: meta)
     }
     
+    public func empty(_ walletType: WalletType = .default, meta: [String: String]? = nil, strategy: EmptyStrategy) async throws {
+        let wallet = try await get(type: walletType)
+        let balance = try await balance(wallet: wallet, asDecimal: true)
+        if balance < 0.0 && strategy == .toZero {
+            throw WalletError.invalidTransaction(reason: "Wallet balance is alreasy below zero.")
+        }
+        let withdrawAmount = strategy == .toZero
+        ? balance * pow(10, Double(wallet.decimalPlaces))
+        : balance * pow(10, Double(wallet.decimalPlaces)) - Double(wallet.minAllowedBalance)
+        try await withdraw(from: wallet, amount: Int(withdrawAmount), meta: meta)
+    }
     
     public func transfer(from: Wallet, to: Wallet, amount: Int, meta: [String: String]? = nil) async throws {
         try await self._transfer(from: from, to: to, amount: amount, meta: meta)
@@ -223,6 +240,21 @@ extension WalletsRepository {
 /// Private methdos
 ///
 extension WalletsRepository {
+    private func canWithdraw(from: Wallet, amount: Int) async throws -> Bool {
+        return try await self._canWithdraw(on: self.db, from: from, amount: amount)
+    }
+    
+    private func withdraw(from: Wallet, amount: Int, meta: [String: String]? = nil) async throws {
+        guard try await canWithdraw(from: from, amount: amount) else {
+            throw WalletError.insufficientBalance
+        }
+        try await self._withdraw(on: self.db, from: from, amount: amount, meta: meta)
+    }
+
+    private func deposit(to: Wallet, amount: Int, confirmed: Bool = true, meta: [String: String]? = nil) async throws {
+        try await self._deposit(on: self.db, to: to, amount: amount, confirmed: confirmed, meta: meta)
+    }
+
     private func _canWithdraw(on db: Database, from: Wallet, amount: Int) async throws -> Bool {
         return try await from.refreshBalance(on: db) - Double(amount) >= Double(from.minAllowedBalance)
     }

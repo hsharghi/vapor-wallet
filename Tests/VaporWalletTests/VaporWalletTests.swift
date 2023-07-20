@@ -15,16 +15,26 @@ class VaporWalletTests: XCTestCase {
         super.setUp()
         
         app = Application(.testing)
-        app.logger.logLevel = .debug
+        app.logger.logLevel = .error
         
-        //        app.databases.use(.postgres(
-        //            hostname: "localhost",
-        //            port: 5432,
-        //            username: "catgpt",
-        //            password: "catgpt",
-        //            database: "catgpt"
-        //        ), as: .psql)
-        //                app.databases.use(.mysql(hostname: "127.0.0.1", port: 3306, username: "vapor", password: "vapor", database: "vp-test"), as: .mysql)
+//                app.databases.use(.postgres(
+//                    hostname: "localhost",
+//                    port: 5433,
+//                    username: "catgpt",
+//                    password: "catgpt",
+//                    database: "catgpt"
+//                ), as: .psql)
+//        
+//        app.databases.use(.postgres(configuration: SQLPostgresConfiguration(
+//            hostname: "localhost",
+//            port: 5433,
+//            username: "catgpt",
+//            password: "catgpt",
+//            database: "catgpt",
+//            tls: .prefer(try! .init(configuration: .clientDefault)))
+//        ), as: .psql)
+
+//                        app.databases.use(.mysql(hostname: "127.0.0.1", port: 3306, username: "vapor", password: "vapor", database: "vp-test"), as: .mysql)
         app.databases.use(.sqlite(.memory), as: .sqlite)
         
         try! migrations(app)
@@ -144,6 +154,39 @@ class VaporWalletTests: XCTestCase {
         
         XCTAssertEqual(balance, 50)
         
+    }
+    
+    func testMakeWalletEmpty() async throws {
+        app.databases.middleware.use(WalletMiddleware<User>())
+        app.databases.middleware.use(WalletTransactionMiddleware())
+
+        var balance: Double
+        
+        let (_, wallets) = try await setupUserAndWalletsRepo(on: app.db)
+        try await wallets.deposit(amount: 100)
+        try await wallets.empty(strategy: .toZero)
+        balance = try await wallets.balance()
+        XCTAssertEqual(balance, 0)
+
+        let magical: WalletType = .init(name: "magical")
+
+        try await wallets.create(type: magical, minAllowedBalance: -50)
+        try await wallets.deposit(to: magical, amount: 50)
+        try await wallets.empty(magical, strategy: .toZero)
+        balance = try await wallets.balance(type: magical)
+        XCTAssertEqual(balance, 0)
+
+        try await wallets.create(type: magical, minAllowedBalance: -50)
+        try await wallets.deposit(to: magical, amount: 100)
+        try await wallets.empty(magical, strategy: .toMinAllowed)
+        balance = try await wallets.balance(type: magical)
+        XCTAssertEqual(balance, -50)
+
+        do {
+            try await wallets.empty(magical, strategy: .toZero)
+        } catch {
+            XCTAssertEqual(error as! WalletError, WalletError.invalidTransaction(reason: "Wallet balance is alreasy below zero."))
+        }
     }
     
     

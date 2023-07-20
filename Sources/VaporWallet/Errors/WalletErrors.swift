@@ -3,6 +3,7 @@ import Vapor
 enum WalletError: DebuggableError {
     case walletNotFound(name: String)
     case insufficientBalance
+    case invalidTransaction(reason: String)
     case transactionFailed(reason: String)
 }
 
@@ -11,7 +12,8 @@ extension WalletError: AbortError {
         switch self {
         case .walletNotFound(_):
             return .notFound
-        case .insufficientBalance:
+        case .insufficientBalance,
+                .invalidTransaction(_):
             return .badRequest
         case .transactionFailed(_):
             return .badRequest
@@ -26,6 +28,8 @@ extension WalletError: AbortError {
             return "Insufficient balance"
         case .transactionFailed(let reason):
             return "Transaction failed. Reason: \(reason)"
+        case .invalidTransaction(reason: let reason):
+            return "Transaction failed. Reason: \(reason)"
         }
     }
     
@@ -35,8 +39,10 @@ extension WalletError: AbortError {
             return "wallet_not_found"
         case .insufficientBalance:
             return "insufficient_balance"
-        case .transactionFailed:
+        case .transactionFailed(_):
             return "transaction_failed"
+        case .invalidTransaction(_):
+            return "invalid_transaction"
         }
     }
     
