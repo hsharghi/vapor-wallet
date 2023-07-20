@@ -192,6 +192,13 @@ extension WalletsRepository {
 ///
 extension WalletsRepository {
     public func transactions(type name: WalletType = .default,
+                             paginationRequest: Request,
+                             sortOrder: DatabaseQuery.Sort.Direction = .descending) async throws -> Page<WalletTransaction> {
+        let page = try paginationRequest.query.decode(PageRequest.self)
+        return try await transactions(type: name, paginate: page, sortOrder: sortOrder)
+    }
+    
+    public func transactions(type name: WalletType = .default,
                                   paginate: PageRequest = .init(page: 1, per: 10),
                                   sortOrder: DatabaseQuery.Sort.Direction = .descending) async throws -> Page<WalletTransaction> {
         let wallet = try await self.get(type: name)
