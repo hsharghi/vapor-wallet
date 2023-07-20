@@ -226,7 +226,7 @@ All fractional amounts in transactions will be truncated to `decimalPlaces` of t
 
 try await repo.create(type: .default, decimalPlaces: 2)
 try await repo.deposit(amount: 1.555)
-let balance = try await repo 
+let balance = try await repo.balance() 
 // balance is 155 not 155.5 and not 1555 
 
 
@@ -245,6 +245,22 @@ let balance = try await repo.balance()
 // balance is -20
 
 ~~~~
+
+### Empty a wallet 
+You can empty a wallet to zero or minimum allowed balance value which has been set when creating the wallet.
+
+~~~~swift
+
+try await repo.create(minAllowedBalance: -50) 
+try await repo.deposite(amount: 100)
+try await repo.empty(strategy: .toZero)
+// balance is 0
+try await repo.empty(strategy: .toMinAllowed)
+// balance is -50
+
+~~~~
+
+
 
 
 ## Known issues
