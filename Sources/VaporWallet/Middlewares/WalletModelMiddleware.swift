@@ -23,7 +23,7 @@ public struct WalletMiddleware<M:HasWallet>: AsyncModelMiddleware {
 
     public func create(model: M, on db: Database, next: AnyAsyncModelResponder) async throws {
         try await next.create(model, on: db)
-        db.logger.log(level: .info, "default wallet for user \(model.id!) has been created")
+        db.logger.info("default wallet for user \(model.id!) has been created")
         let repo = model.walletsRepository(on: db)
         try await repo.create(type: walletType, decimalPlaces: decimalPlaces, minAllowedBalance: minAllowedBalance)
     }
