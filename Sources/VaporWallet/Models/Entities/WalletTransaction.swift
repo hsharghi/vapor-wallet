@@ -9,7 +9,7 @@ import Vapor
 import Fluent
 
 
-enum TransactionType: String, Content {
+public enum TransactionType: String, Content {
     case deposit, withdraw
 }
 
@@ -22,25 +22,25 @@ public final class WalletTransaction: Model {
     public var id: UUID?
     
     @Parent(key: "wallet_id")
-    var wallet: Wallet
+    public var wallet: Wallet
     
     @Enum(key: "transaction_type")
-    var transactionType: TransactionType
+    public var transactionType: TransactionType
     
     @Field(key: "amount")
-    var amount: Int
+    public var amount: Int
     
     @Field(key: "confirmed")
-    var confirmed: Bool
+    public var confirmed: Bool
 
     @Field(key: "meta")
-    var meta: [String: String]?
+    public var meta: [String: String]?
     
     @Timestamp(key: "created_at", on: .create)
-    var createdAt: Date?
+    public var createdAt: Date?
     
     @Timestamp(key: "updated_at", on: .update)
-    var updatedAt: Date?
+    public var updatedAt: Date?
 
     public init() {}
     
@@ -78,5 +78,16 @@ extension WalletTransaction {
         try await self.update(on: db)
     }
     
+    public var metaData: [String: String]? {
+        self.meta
+    }
     
+    public var type: TransactionType {
+        self.transactionType
+    }
+    
+    public var transactionAmout: Int {
+        return self.amount
+    }
+
 }
