@@ -102,6 +102,14 @@ class VaporWalletTests: XCTestCase {
         
     }
     
+    func testCreateWalletWithDuplicateName() async throws {
+        let (_, wallets) = try await setupUserAndWalletsRepo(on: app.db)
+        try await wallets.create(type: .init(name: "savings"))
+        await XCTAssertThrowsError(try await wallets.create(type: .init(name: "savings")), "expected throw") { (error) in
+            XCTAssertEqual(error as! WalletError, WalletError.duplicateWalletType(name: "savings"))
+        }
+    }
+    
     func testWalletDeposit() async throws {
         app.databases.middleware.use(WalletMiddleware<User>())
         let (_, wallets) = try await setupUserAndWalletsRepo(on: app.db)
@@ -187,7 +195,6 @@ class VaporWalletTests: XCTestCase {
         balance = try await wallets.balance(type: magical)
         XCTAssertEqual(balance, 0)
 
-        try await wallets.create(type: magical, minAllowedBalance: -50)
         try await wallets.deposit(to: magical, amount: 100)
         try await wallets.empty(magical, strategy: .toMinAllowed)
         balance = try await wallets.balance(type: magical)

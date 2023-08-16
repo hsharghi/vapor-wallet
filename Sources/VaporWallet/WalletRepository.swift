@@ -41,6 +41,13 @@ extension WalletsRepository {
     }
     
     public func create(type name: WalletType = .default, decimalPlaces: UInt8 = 2, minAllowedBalance: Int = 0) async throws {
+        guard try await Wallet.query(on: db)
+            .filter(\.$ownerType == self.type)
+            .filter(\.$owner == self.id)
+            .filter(\.$name == name.value)
+            .count() == 0 else {
+            throw WalletError.duplicateWalletType(name: name.value)
+        }
         let wallet: Wallet = Wallet(ownerType: self.type,
                                     ownerID: self.id,
                                     name: name.value,
@@ -65,9 +72,7 @@ extension WalletsRepository {
         if (withTransactions) {
             walletQuery = walletQuery.with(\.$transactions)
         }
-        let wallet = try await walletQuery.first()
-        
-        guard let wallet = wallet else {
+        guard let wallet = try await walletQuery.first() else {
             throw WalletError.walletNotFound(name: name.value)
         }
         return wallet
