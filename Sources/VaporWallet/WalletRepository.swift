@@ -146,15 +146,15 @@ extension WalletsRepository {
     }
     
     
-    public func deposit(to: WalletType = .default, amount: Double, confirmed: Bool = true, meta: [String: String]? = nil) async throws {
+    public func deposit(to: WalletType = .default, amount: Double, confirmed: Bool = true, expiresAt: Date? = nil, meta: [String: String]? = nil) async throws {
         let wallet = try await get(type: to)
         let intAmount = Int(amount * pow(10, Double(wallet.decimalPlaces)))
-        try await deposit(to: wallet, amount: intAmount, confirmed: confirmed, meta: meta)
+        try await deposit(to: wallet, amount: intAmount, confirmed: confirmed, expiresAt: expiresAt, meta: meta)
     }
     
-    public func deposit(to: WalletType = .default, amount: Int, confirmed: Bool = true, meta: [String: String]? = nil) async throws {
+    public func deposit(to: WalletType = .default, amount: Int, confirmed: Bool = true, expiresAt: Date? = nil, meta: [String: String]? = nil) async throws {
         let wallet = try await get(type: to)
-        try await deposit(to: wallet, amount: amount, confirmed: confirmed, meta: meta)
+        try await deposit(to: wallet, amount: amount, confirmed: confirmed, expiresAt: expiresAt, meta: meta)
     }
     
     public func empty(_ walletType: WalletType = .default, meta: [String: String]? = nil, strategy: EmptyStrategy) async throws {
@@ -258,19 +258,24 @@ extension WalletsRepository {
         try await self._withdraw(on: self.db, from: from, amount: amount, meta: meta)
     }
 
-    private func deposit(to: Wallet, amount: Int, confirmed: Bool = true, meta: [String: String]? = nil) async throws {
-        try await self._deposit(on: self.db, to: to, amount: amount, confirmed: confirmed, meta: meta)
+    private func deposit(to: Wallet, amount: Int, confirmed: Bool = true, expiresAt: Date? = nil, meta: [String: String]? = nil) async throws {
+        try await self._deposit(on: self.db, to: to, amount: amount, confirmed: confirmed, expiresAt: expiresAt, meta: meta)
     }
 
     private func _canWithdraw(on db: Database, from: Wallet, amount: Int) async throws -> Bool {
         return try await from.refreshBalance(on: db) - Double(amount) >= Double(from.minAllowedBalance)
     }
     
-    private func _deposit(on db: Database, to: Wallet, amount: Int, confirmed: Bool = true, meta: [String: String]? = nil) async throws {
+    private func _deposit(on db: Database, to: Wallet, amount: Int, confirmed: Bool = true, expiresAt: Date? = nil, meta: [String: String]? = nil) async throws {
         try await db.transaction { database in
             var walletTransaction: WalletTransaction
             do {
-                walletTransaction = WalletTransaction(walletID: try to.requireID(), transactionType: .deposit, amount: amount, confirmed: confirmed, meta: meta)
+                walletTransaction = WalletTransaction(walletID: try to.requireID(),
+                                                      transactionType: .deposit,
+                                                      amount: amount,
+                                                      confirmed: confirmed,
+                                                      meta: meta,
+                                                      expiresAt: expiresAt)
             } catch {
                 throw WalletError.walletNotFound(name: to.name)
             }

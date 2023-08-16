@@ -20,6 +20,7 @@ public struct CreateWalletTransaction: AsyncMigration {
             .field("meta", .json)
             .field("created_at", .datetime, .required)
             .field("updated_at", .datetime, .required)
+            .field("expires_at", .datetime)
             .create()
     }
     

@@ -117,6 +117,17 @@ class VaporWalletTests: XCTestCase {
         
     }
     
+    func testWalletDepositWithExpiry() async throws {
+        app.databases.middleware.use(WalletMiddleware<User>())
+        let (_, wallets) = try await setupUserAndWalletsRepo(on: app.db)
+        
+        let expiryDate = Date().addingTimeInterval(1000)
+        try! await wallets.deposit(amount: 10, expiresAt: expiryDate)
+        let transaction = try await wallets.transactions().items.first!
+        XCTAssertEqual(transaction.expiresAt, expiryDate)
+        
+    }
+    
     func testWalletTransactionMiddleware() async throws {
         app.databases.middleware.use(WalletMiddleware<User>())
         app.databases.middleware.use(WalletTransactionMiddleware())

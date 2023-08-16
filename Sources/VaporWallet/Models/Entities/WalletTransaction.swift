@@ -42,6 +42,9 @@ public final class WalletTransaction: Model {
     @Timestamp(key: "updated_at", on: .update)
     public var updatedAt: Date?
 
+    @Field(key: "expires_at")
+    public var expiresAt: Date?
+
     public init() {}
     
     init(
@@ -51,6 +54,7 @@ public final class WalletTransaction: Model {
         amount: Int,
         confirmed: Bool = true,
         meta: [String: String]? = nil,
+        expiresAt: Date? = nil,
         createdAt: Date? = nil,
         updatedAt: Date? = nil
     ) {
@@ -60,6 +64,7 @@ public final class WalletTransaction: Model {
         self.amount = amount
         self.meta = meta
         self.confirmed = confirmed
+        self.expiresAt = expiresAt
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -77,17 +82,4 @@ extension WalletTransaction {
         self.confirmed = true
         try await self.update(on: db)
     }
-    
-    public var metaData: [String: String]? {
-        self.meta
-    }
-    
-    public var type: TransactionType {
-        self.transactionType
-    }
-    
-    public var transactionAmout: Int {
-        return self.amount
-    }
-
 }
