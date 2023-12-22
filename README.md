@@ -31,7 +31,7 @@ In your `Package.swift` file, add the following
 
 ### Setup model
 
-Simply conform any `Model` to HasWallet protocol and now you model has a virtual wallet.
+Simply conform any `Model` to HasWallet protocol and now your model has a virtual wallet.
 
 ~~~~swift
 
